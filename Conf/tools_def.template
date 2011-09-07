@@ -45,9 +45,9 @@ DEFINE WINSDKx86_BIN    = c:\Program Files (x86)\Microsoft SDKs\Windows\DEF(WINS
 # are used by other toolchains.  An example is that ICC on Windows normally
 # uses Microsoft's nmake.exe.
 
-# Some MS_VS_BIN options: DEF(VS2003_BIN), DEF(VS2005_BIN), DEF(VS2005x86_BIN)
+# Some MS_VS_BIN options: DEF(VS2003_BIN), DEF(VS2005_BIN), DEF(VS2005x86_BIN), DEF(VS2008_BIN), DEF(VS2008x86_BIN)
 DEFINE MS_VS_BIN   = DEF(VS2005_BIN)
-# Some MS_VS_DLL options: DEF(VS2003_DLL), DEF(VS2005_DLL), DEF(VS2005x86_DLL)
+# Some MS_VS_DLL options: DEF(VS2003_DLL), DEF(VS2005_DLL), DEF(VS2005x86_DLL), DEF(VS2008_DLL), DEF(VS2008x86_DLL)
 DEFINE MS_VS_DLL   = DEF(VS2005_DLL)
 
 DEFINE WINDDK_BIN16     = C:\WINDDK\3790.1830\bin\bin16
@@ -78,7 +78,7 @@ DEFINE ICC_BIN64x86     = C:\Program Files (x86)\Intel\Compiler\C++\DEF(ICC_VERS
 #       We use "ICC11" tag for ICC 11.1 while "ICC" tag is dedicated for eariler versions
 #
 DEFINE ICC11_VERSION      = 11.1
-DEFINE ICC11_BUILD        = 067
+DEFINE ICC11_BUILD        = 072
 DEFINE ICC11_BIN32        = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
 DEFINE ICC11_ASM32        = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
 DEFINE ICC11_BIN32x86     = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
@@ -263,7 +263,7 @@ DEFINE CLANG_BIN = /usr/bin/
 #   ICC         -win32-  Requires:
 #                             Intel C Compiler V9.1
 #                        Dependencies:
-#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Visual Studio 2003 or 2005
 #                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
 #                             version 3790.1830 for X64 target architectures
 #                        Optional:
@@ -340,7 +340,7 @@ DEFINE CLANG_BIN = /usr/bin/
 #   ICCxASL     -win32-  Requires:
 #                             Intel C Compiler V9.1
 #                        Dependencies:
-#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Visual Studio 2003 or 2005
 #                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
 #                             version 3790.1830 for X64 target architectures
 #                        Optional:
@@ -380,7 +380,7 @@ DEFINE CLANG_BIN = /usr/bin/
 #   ICCx86      -win64-  Requires:
 #                             Intel C Compiler V9.1(x86)
 #                        Dependencies:
-#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Visual Studio 2003 or 2005
 #                             Microsoft Windows Server 2003 Driver Development Kit 
 #                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
 #                        Optional:
@@ -420,7 +420,7 @@ DEFINE CLANG_BIN = /usr/bin/
 #   ICCx86xASL  -win64-  Requires:
 #                             Intel C Compiler V9.1 (x86)
 #                        Dependencies:
-#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Visual Studio 2003 or 2005
 #                             Microsoft Windows Server 2003 Driver Development Kit
 #                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
 #                        Optional:
@@ -2826,15 +2826,15 @@ NOOPT_ICCxASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL 
 #   ICCx86              - Intel C Compiler V9.1
 *_ICCx86_*_*_FAMILY                    = INTEL
 
-*_ICCx86_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
-*_ICCx86_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
+*_ICCx86_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
+*_ICCx86_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
 
 *_ICCx86_*_MAKE_FLAGS                       = /nologo
 *_ICCx86_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
 *_ICCx86_*_APP_FLAGS                        = /nologo /E /TC
 *_ICCx86_*_PP_FLAGS                         = /nologo /E /TC /FIAutoGen.h
 
-*_ICCx86_*_ASM16_PATH      = DEF(VS2005x86_BIN)\ml.exe
+*_ICCx86_*_ASM16_PATH      = DEF(MS_VS_BIN)\ml.exe
 
 ##################
 # ASL definitions
@@ -2852,13 +2852,13 @@ NOOPT_ICCxASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL 
 *_ICCx86_IA32_CC_PATH                  = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86_IA32_SLINK_PATH               = DEF(ICC_BIN32x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86_IA32_SLINK_DLL                = DEF(VS2005x86_BIN)
+*_ICCx86_IA32_SLINK_DLL                = DEF(MS_VS_BIN)
 *_ICCx86_IA32_DLINK_PATH               = DEF(ICC_BIN32x86)\xilink.exe
 *_ICCx86_IA32_PP_PATH                  = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86_IA32_VFRPP_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86_IA32_APP_PATH                 = DEF(ICC_BIN32x86)\icl.exe
-*_ICCx86_IA32_ASM_PATH                 = DEF(VS2005x86_BIN)\ml.exe
-*_ICCx86_IA32_ASM_DLL                  = DEF(VS2005x86_DLL)
+*_ICCx86_IA32_ASM_PATH                 = DEF(MS_VS_BIN)\ml.exe
+*_ICCx86_IA32_ASM_DLL                  = DEF(MS_VS_DLL)
 *_ICCx86_IA32_ASLCC_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86_IA32_ASLPP_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86_IA32_ASLDLINK_PATH            = DEF(ICC_BIN32x86)\xilink.exe
@@ -2882,13 +2882,13 @@ NOOPT_ICCx86_IA32_DLINK_FLAGS               = /NOLOGO /NODEFAULTLIB /IGNORE:4001
 *_ICCx86_X64_CC_PATH                   = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_SLINK_PATH                = DEF(ICC_BINX64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86_X64_SLINK_DLL                 = DEF(VS2005x86_BIN)
+*_ICCx86_X64_SLINK_DLL                 = DEF(MS_VS_BIN)
 *_ICCx86_X64_DLINK_PATH                = DEF(ICC_BINX64x86)\xilink.exe
 *_ICCx86_X64_PP_PATH                   = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_VFRPP_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_APP_PATH                  = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_ASM_PATH                  = DEF(WINDDK_BINX64)\ml64.exe
-*_ICCx86_X64_ASM_DLL                   = DEF(VS2005x86_DLL)
+*_ICCx86_X64_ASM_DLL                   = DEF(MS_VS_DLL)
 *_ICCx86_X64_ASLCC_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_ASLPP_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86_X64_ASLDLINK_PATH             = DEF(ICC_BINX64x86)\xilink.exe
@@ -2913,10 +2913,10 @@ NOOPT_ICCx86_X64_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /IGNORE:4001
 ##################
 *_ICCx86_IPF_CC_PATH                   = DEF(ICC_BIN64x86)\icl.exe
 # icl.exe needs cl.exe from Visual Studio
-*_ICCx86_IPF_CC_DLL                    = DEF(VS2005x86_BIN)
+*_ICCx86_IPF_CC_DLL                    = DEF(MS_VS_BIN)
 *_ICCx86_IPF_SLINK_PATH                = DEF(ICC_BIN64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86_IPF_SLINK_DLL                 = DEF(VS2005x86_BIN);DEF(VS2005x86_DLL)
+*_ICCx86_IPF_SLINK_DLL                 = DEF(MS_VS_BIN);DEF(MS_VS_DLL)
 *_ICCx86_IPF_DLINK_PATH                = DEF(ICC_BIN64x86)\xilink.exe
 *_ICCx86_IPF_PP_PATH                   = DEF(ICC_BIN64x86)\icl.exe
 *_ICCx86_IPF_VFRPP_PATH                = DEF(ICC_BIN64x86)\icl.exe
@@ -2945,7 +2945,7 @@ NOOPT_ICCx86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL /
 ##################
 *_ICCx86_EBC_*_FAMILY              = INTEL
 
-*_ICCx86_EBC_MAKE_PATH             = DEF(VS2005x86_BIN)\nmake.exe
+*_ICCx86_EBC_MAKE_PATH             = DEF(MS_VS_BIN)\nmake.exe
 *_ICCx86_EBC_PP_PATH               = DEF(EBC_BINx86)\iec.exe
 *_ICCx86_EBC_VFRPP_PATH            = DEF(EBC_BINx86)\iec.exe
 *_ICCx86_EBC_CC_PATH               = DEF(EBC_BINx86)\iec.exe
@@ -2971,15 +2971,15 @@ NOOPT_ICCx86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL /
 #   ICCx86xASL              - Intel C Compiler V9.1
 *_ICCx86xASL_*_*_FAMILY                    = INTEL
 
-*_ICCx86xASL_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
-*_ICCx86xASL_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
+*_ICCx86xASL_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
+*_ICCx86xASL_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
 
 *_ICCx86xASL_*_MAKE_FLAGS                       = /nologo
 *_ICCx86xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
 *_ICCx86xASL_*_APP_FLAGS                        = /nologo /E /TC
 *_ICCx86xASL_*_PP_FLAGS                         = /nologo /E /TC /FIAutoGen.h
 
-*_ICCx86ASL_*_ASM16_PATH      = DEF(VS2005x86_BIN)\ml.exe
+*_ICCx86ASL_*_ASM16_PATH      = DEF(MS_VS_BIN)\ml.exe
 
 ##################
 # ASL definitions
@@ -2997,13 +2997,13 @@ NOOPT_ICCx86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL /
 *_ICCx86xASL_IA32_CC_PATH                  = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86xASL_IA32_SLINK_PATH               = DEF(ICC_BIN32x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86xASL_IA32_SLINK_DLL                = DEF(VS2005x86_BIN)
+*_ICCx86xASL_IA32_SLINK_DLL                = DEF(MS_VS_BIN)
 *_ICCx86xASL_IA32_DLINK_PATH               = DEF(ICC_BIN32x86)\xilink.exe
 *_ICCx86xASL_IA32_PP_PATH                  = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86xASL_IA32_VFRPP_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86xASL_IA32_APP_PATH                 = DEF(ICC_BIN32x86)\icl.exe
-*_ICCx86xASL_IA32_ASM_PATH                 = DEF(VS2005x86_BIN)\ml.exe
-*_ICCx86xASL_IA32_ASM_DLL                  = DEF(VS2005x86_DLL)
+*_ICCx86xASL_IA32_ASM_PATH                 = DEF(MS_VS_BIN)\ml.exe
+*_ICCx86xASL_IA32_ASM_DLL                  = DEF(MS_VS_DLL)
 *_ICCx86xASL_IA32_ASLCC_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86xASL_IA32_ASLPP_PATH               = DEF(ICC_BIN32x86)\icl.exe
 *_ICCx86xASL_IA32_ASLDLINK_PATH            = DEF(ICC_BIN32x86)\xilink.exe
@@ -3027,13 +3027,13 @@ NOOPT_ICCx86xASL_IA32_DLINK_FLAGS               = /NOLOGO /NODEFAULTLIB /IGNORE:
 *_ICCx86xASL_X64_CC_PATH                   = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_SLINK_PATH                = DEF(ICC_BINX64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86xASL_X64_SLINK_DLL                 = DEF(VS2005x86_BIN)
+*_ICCx86xASL_X64_SLINK_DLL                 = DEF(MS_VS_BIN)
 *_ICCx86xASL_X64_DLINK_PATH                = DEF(ICC_BINX64x86)\xilink.exe
 *_ICCx86xASL_X64_PP_PATH                   = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_VFRPP_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_APP_PATH                  = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_ASM_PATH                  = DEF(WINDDK_BINX64)\ml64.exe
-*_ICCx86xASL_X64_ASM_DLL                   = DEF(VS2005x86_DLL)
+*_ICCx86xASL_X64_ASM_DLL                   = DEF(MS_VS_DLL)
 *_ICCx86xASL_X64_ASLCC_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_ASLPP_PATH                = DEF(ICC_BINX64x86)\icl.exe
 *_ICCx86xASL_X64_ASLDLINK_PATH             = DEF(ICC_BINX64x86)\xilink.exe
@@ -3058,10 +3058,10 @@ NOOPT_ICCx86xASL_X64_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /IGNORE:
 ##################
 *_ICCx86xASL_IPF_CC_PATH                   = DEF(ICC_BIN64x86)\icl.exe
 # icl.exe needs cl.exe from Visual Studio
-*_ICCx86xASL_IPF_CC_DLL                    = DEF(VS2005x86_BIN)
+*_ICCx86xASL_IPF_CC_DLL                    = DEF(MS_VS_BIN)
 *_ICCx86xASL_IPF_SLINK_PATH                = DEF(ICC_BIN64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICCx86xASL_IPF_SLINK_DLL                 = DEF(VS2005x86_BIN);DEF(VS2005x86_DLL)
+*_ICCx86xASL_IPF_SLINK_DLL                 = DEF(MS_VS_BIN);DEF(MS_VS_DLL)
 *_ICCx86xASL_IPF_DLINK_PATH                = DEF(ICC_BIN64x86)\xilink.exe
 *_ICCx86xASL_IPF_PP_PATH                   = DEF(ICC_BIN64x86)\icl.exe
 *_ICCx86xASL_IPF_VFRPP_PATH                = DEF(ICC_BIN64x86)\icl.exe
@@ -3090,7 +3090,7 @@ NOOPT_ICCx86xASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /D
 ##################
 *_ICCx86xASL_EBC_*_FAMILY              = INTEL
 
-*_ICCx86xASL_EBC_MAKE_PATH             = DEF(VS2005x86_BIN)\nmake.exe
+*_ICCx86xASL_EBC_MAKE_PATH             = DEF(MS_VS_BIN)\nmake.exe
 *_ICCx86xASL_EBC_PP_PATH               = DEF(EBC_BINx86)\iec.exe
 *_ICCx86xASL_EBC_VFRPP_PATH            = DEF(EBC_BINx86)\iec.exe
 *_ICCx86xASL_EBC_CC_PATH               = DEF(EBC_BINx86)\iec.exe
@@ -3108,9 +3108,9 @@ NOOPT_ICCx86xASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /D
 ####################################################################################
 #
 # Intel(R) C++ Compiler Version 11.1
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia64)
 #   ASL  - Intel ACPI Source Language Compiler
 #
 ####################################################################################
@@ -3251,9 +3251,9 @@ NOOPT_ICC11_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL /O
 #
 # Intel(R) C++ Compiler Version 11.1
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia64)
 #   ASL  - Microsoft ACPI Source Language Compiler
 #
 ####################################################################################
@@ -3396,24 +3396,24 @@ NOOPT_ICC11xASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DL
 #
 # Intel(R) C++ Compiler Version 11.1 x86 (32-bit on 64-bit OS)
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia64)
 #   ASL  - Intel ACPI Source Language Compiler
 #
 ####################################################################################
 #   ICC11x86              - Intel C Compiler V11.1
 *_ICC11x86_*_*_FAMILY                    = INTEL
 
-*_ICC11x86_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
-*_ICC11x86_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
+*_ICC11x86_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
+*_ICC11x86_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
 
 *_ICC11x86_*_MAKE_FLAGS                       = /nologo
 *_ICC11x86_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
 *_ICC11x86_*_APP_FLAGS                        = /nologo /E /TC
 *_ICC11x86_*_PP_FLAGS                         = /nologo /E /TC /FIAutoGen.h
 
-*_ICC11x86_*_ASM16_PATH      = DEF(VS2005x86_BIN)\ml.exe
+*_ICC11x86_*_ASM16_PATH      = DEF(MS_VS_BIN)\ml.exe
 
 ##################
 # ASL definitions
@@ -3431,13 +3431,13 @@ NOOPT_ICC11xASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DL
 *_ICC11x86_IA32_CC_PATH                  = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86_IA32_SLINK_PATH               = DEF(ICC11_BIN32x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86_IA32_SLINK_DLL                = DEF(VS2005x86_BIN)
+*_ICC11x86_IA32_SLINK_DLL                = DEF(MS_VS_BIN)
 *_ICC11x86_IA32_DLINK_PATH               = DEF(ICC11_BIN32x86)\xilink.exe
 *_ICC11x86_IA32_PP_PATH                  = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86_IA32_VFRPP_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86_IA32_APP_PATH                 = DEF(ICC11_BIN32x86)\icl.exe
-*_ICC11x86_IA32_ASM_PATH                 = DEF(VS2005x86_BIN)\ml.exe
-*_ICC11x86_IA32_ASM_DLL                  = DEF(VS2005x86_DLL)
+*_ICC11x86_IA32_ASM_PATH                 = DEF(MS_VS_BIN)\ml.exe
+*_ICC11x86_IA32_ASM_DLL                  = DEF(MS_VS_DLL)
 *_ICC11x86_IA32_ASLCC_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86_IA32_ASLPP_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86_IA32_ASLDLINK_PATH            = DEF(ICC11_BIN32x86)\xilink.exe
@@ -3459,13 +3459,13 @@ NOOPT_ICC11x86_IA32_DLINK_FLAGS               = /NOLOGO /NODEFAULTLIB /IGNORE:40
 *_ICC11x86_X64_CC_PATH                   = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_SLINK_PATH                = DEF(ICC11_BINX64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86_X64_SLINK_DLL                 = DEF(VS2005x86_BIN)
+*_ICC11x86_X64_SLINK_DLL                 = DEF(MS_VS_BIN)
 *_ICC11x86_X64_DLINK_PATH                = DEF(ICC11_BINX64x86)\xilink.exe
 *_ICC11x86_X64_PP_PATH                   = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_VFRPP_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_APP_PATH                  = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_ASM_PATH                  = DEF(WINDDK_BINX64)\ml64.exe
-*_ICC11x86_X64_ASM_DLL                   = DEF(VS2005x86_DLL)
+*_ICC11x86_X64_ASM_DLL                   = DEF(MS_VS_DLL)
 *_ICC11x86_X64_ASLCC_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_ASLPP_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86_X64_ASLDLINK_PATH             = DEF(ICC11_BINX64x86)\xilink.exe
@@ -3488,10 +3488,10 @@ NOOPT_ICC11x86_X64_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /IGNORE:40
 ##################
 *_ICC11x86_IPF_CC_PATH                   = DEF(ICC11_BIN64x86)\icl.exe
 # icl.exe needs cl.exe from Visual Studio
-*_ICC11x86_IPF_CC_DLL                    = DEF(VS2005x86_BIN)
+*_ICC11x86_IPF_CC_DLL                    = DEF(MS_VS_BIN)
 *_ICC11x86_IPF_SLINK_PATH                = DEF(ICC11_BIN64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86_IPF_SLINK_DLL                 = DEF(VS2005x86_BIN);DEF(VS2005x86_DLL)
+*_ICC11x86_IPF_SLINK_DLL                 = DEF(MS_VS_BIN);DEF(MS_VS_DLL)
 *_ICC11x86_IPF_DLINK_PATH                = DEF(ICC11_BIN64x86)\xilink.exe
 *_ICC11x86_IPF_PP_PATH                   = DEF(ICC11_BIN64x86)\icl.exe
 *_ICC11x86_IPF_VFRPP_PATH                = DEF(ICC11_BIN64x86)\icl.exe
@@ -3519,7 +3519,7 @@ NOOPT_ICC11x86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL
 ##################
 *_ICC11x86_EBC_*_FAMILY              = INTEL
 
-*_ICC11x86_EBC_MAKE_PATH             = DEF(VS2005x86_BIN)\nmake.exe
+*_ICC11x86_EBC_MAKE_PATH             = DEF(MS_VS_BIN)\nmake.exe
 *_ICC11x86_EBC_PP_PATH               = DEF(EBC_BINx86)\iec.exe
 *_ICC11x86_EBC_VFRPP_PATH            = DEF(EBC_BINx86)\iec.exe
 *_ICC11x86_EBC_CC_PATH               = DEF(EBC_BINx86)\iec.exe
@@ -3538,24 +3538,24 @@ NOOPT_ICC11x86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL
 #
 # Intel(R) C++ Compiler Version 11.1 x86 (32-bit on 64-bit OS)
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 072 Package ID: w_cproc_p_11.1.072_ia64)
 #   ASL  - Microsoft ACPI Source Language Compiler
 #
 ####################################################################################
 #   ICC11x86xASL              - Intel C Compiler V11.1
 *_ICC11x86xASL_*_*_FAMILY                    = INTEL
 
-*_ICC11x86xASL_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
-*_ICC11x86xASL_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
+*_ICC11x86xASL_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
+*_ICC11x86xASL_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
 
 *_ICC11x86xASL_*_MAKE_FLAGS                       = /nologo
 *_ICC11x86xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
 *_ICC11x86xASL_*_APP_FLAGS                        = /nologo /E /TC
 *_ICC11x86xASL_*_PP_FLAGS                         = /nologo /E /TC /FIAutoGen.h
 
-*_ICC11x86xASL_*_ASM16_PATH      = DEF(VS2005x86_BIN)\ml.exe
+*_ICC11x86xASL_*_ASM16_PATH      = DEF(MS_VS_BIN)\ml.exe
 
 ##################
 # ASL definitions
@@ -3573,13 +3573,13 @@ NOOPT_ICC11x86_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG /DLL
 *_ICC11x86xASL_IA32_CC_PATH                  = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86xASL_IA32_SLINK_PATH               = DEF(ICC11_BIN32x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86xASL_IA32_SLINK_DLL                = DEF(VS2005x86_BIN)
+*_ICC11x86xASL_IA32_SLINK_DLL                = DEF(MS_VS_BIN)
 *_ICC11x86xASL_IA32_DLINK_PATH               = DEF(ICC11_BIN32x86)\xilink.exe
 *_ICC11x86xASL_IA32_PP_PATH                  = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86xASL_IA32_VFRPP_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86xASL_IA32_APP_PATH                 = DEF(ICC11_BIN32x86)\icl.exe
-*_ICC11x86xASL_IA32_ASM_PATH                 = DEF(VS2005x86_BIN)\ml.exe
-*_ICC11x86xASL_IA32_ASM_DLL                  = DEF(VS2005x86_DLL)
+*_ICC11x86xASL_IA32_ASM_PATH                 = DEF(MS_VS_BIN)\ml.exe
+*_ICC11x86xASL_IA32_ASM_DLL                  = DEF(MS_VS_DLL)
 *_ICC11x86xASL_IA32_ASLCC_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86xASL_IA32_ASLPP_PATH               = DEF(ICC11_BIN32x86)\icl.exe
 *_ICC11x86xASL_IA32_ASLDLINK_PATH            = DEF(ICC11_BIN32x86)\xilink.exe
@@ -3602,13 +3602,13 @@ NOOPT_ICC11x86xASL_IA32_DLINK_FLAGS               = /NOLOGO /NODEFAULTLIB /IGNOR
 *_ICC11x86xASL_X64_CC_PATH                   = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_SLINK_PATH                = DEF(ICC11_BINX64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86xASL_X64_SLINK_DLL                 = DEF(VS2005x86_BIN)
+*_ICC11x86xASL_X64_SLINK_DLL                 = DEF(MS_VS_BIN)
 *_ICC11x86xASL_X64_DLINK_PATH                = DEF(ICC11_BINX64x86)\xilink.exe
 *_ICC11x86xASL_X64_PP_PATH                   = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_VFRPP_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_APP_PATH                  = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_ASM_PATH                  = DEF(WINDDK_BINX64)\ml64.exe
-*_ICC11x86xASL_X64_ASM_DLL                   = DEF(VS2005x86_DLL)
+*_ICC11x86xASL_X64_ASM_DLL                   = DEF(MS_VS_DLL)
 *_ICC11x86xASL_X64_ASLCC_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_ASLPP_PATH                = DEF(ICC11_BINX64x86)\icl.exe
 *_ICC11x86xASL_X64_ASLDLINK_PATH             = DEF(ICC11_BINX64x86)\xilink.exe
@@ -3632,10 +3632,10 @@ NOOPT_ICC11x86xASL_X64_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /IGNOR
 ##################
 *_ICC11x86xASL_IPF_CC_PATH                   = DEF(ICC11_BIN64x86)\icl.exe
 # icl.exe needs cl.exe from Visual Studio
-*_ICC11x86xASL_IPF_CC_DLL                    = DEF(VS2005x86_BIN)
+*_ICC11x86xASL_IPF_CC_DLL                    = DEF(MS_VS_BIN)
 *_ICC11x86xASL_IPF_SLINK_PATH                = DEF(ICC11_BIN64x86)\xilib.exe
 # xilib.exe needs lib.exe from Visual Studio
-*_ICC11x86xASL_IPF_SLINK_DLL                 = DEF(VS2005x86_BIN);DEF(VS2005x86_DLL)
+*_ICC11x86xASL_IPF_SLINK_DLL                 = DEF(MS_VS_BIN);DEF(MS_VS_DLL)
 *_ICC11x86xASL_IPF_DLINK_PATH                = DEF(ICC11_BIN64x86)\xilink.exe
 *_ICC11x86xASL_IPF_PP_PATH                   = DEF(ICC11_BIN64x86)\icl.exe
 *_ICC11x86xASL_IPF_VFRPP_PATH                = DEF(ICC11_BIN64x86)\icl.exe
@@ -3661,7 +3661,7 @@ NOOPT_ICC11x86xASL_IPF_DLINK_FLAGS                = /NOLOGO /NODEFAULTLIB /LTCG 
 ##################
 *_ICC11x86xASL_EBC_*_FAMILY              = INTEL
 
-*_ICC11x86xASL_EBC_MAKE_PATH             = DEF(VS2005x86_BIN)\nmake.exe
+*_ICC11x86xASL_EBC_MAKE_PATH             = DEF(MS_VS_BIN)\nmake.exe
 *_ICC11x86xASL_EBC_PP_PATH               = DEF(EBC_BINx86)\iec.exe
 *_ICC11x86xASL_EBC_VFRPP_PATH            = DEF(EBC_BINx86)\iec.exe
 *_ICC11x86xASL_EBC_CC_PATH               = DEF(EBC_BINx86)\iec.exe
