@@ -1196,7 +1196,7 @@ class PlatformAutoGen(AutoGen):
             if LibraryClass.startswith("NULL"):
                 Module.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
 
-        # R9 module
+        # EdkII module
         LibraryConsumerList = [Module]
         Constructor         = []
         ConsumedByList      = sdict()
@@ -1445,7 +1445,7 @@ class PlatformAutoGen(AutoGen):
 
     ## Resolve library names to library modules
     #
-    # (for R8.x modules)
+    # (for Edk.x modules)
     #
     #   @param  Module  The module from which the library names will be resolved
     #
@@ -1456,7 +1456,7 @@ class PlatformAutoGen(AutoGen):
         EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self.Arch))
         LibraryConsumerList = [Module]
 
-        # "CompilerStub" is a must for R8 modules
+        # "CompilerStub" is a must for Edk modules
         if Module.Libraries:
             Module.Libraries.append("CompilerStub")
         LibraryList = []
@@ -1858,7 +1858,7 @@ class ModuleAutoGen(AutoGen):
     def _GetModuleType(self):
         return self.Module.ModuleType
 
-    ## Return the component type (for R8.x style of module)
+    ## Return the component type (for Edk.x style of module)
     def _GetComponentType(self):
         return self.Module.ComponentType
 
@@ -2354,11 +2354,11 @@ class ModuleAutoGen(AutoGen):
                 for Inc in self.Module.Includes:
                     if Inc not in self._IncludePathList:
                         self._IncludePathList.append(Inc)
-                    # for r8 modules
+                    # for Edk modules
                     Inc = path.join(Inc, self.Arch.capitalize())
                     if os.path.exists(Inc) and Inc not in self._IncludePathList:
                         self._IncludePathList.append(Inc)
-                # r8 module needs to put DEBUG_DIR at the end of search path and not to use SOURCE_DIR all the time
+                # Edk module needs to put DEBUG_DIR at the end of search path and not to use SOURCE_DIR all the time
                 self._IncludePathList.append(self.DebugDir)
             else:
                 self._IncludePathList.append(self.MetaFile.Dir)
@@ -2518,7 +2518,7 @@ class ModuleAutoGen(AutoGen):
 
         for File in self.AutoGenFileList:
             if GenC.Generate(File.Path, self.AutoGenFileList[File], File.IsBinary):
-                #Ignore R8 AutoGen.c
+                #Ignore Edk AutoGen.c
                 if self.AutoGenVersion < 0x00010005 and File.Name == 'AutoGen.c':
                         continue
 

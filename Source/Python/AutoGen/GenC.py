@@ -2026,7 +2026,7 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH, UniGenCFlag, UniGenBinBuffer):
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
-    # no generation of AutoGen.c for R8 modules without unicode file
+    # no generation of AutoGen.c for Edk modules without unicode file
     if Info.AutoGenVersion < 0x00010005 and len(Info.UnicodeFileList) == 0:
         AutoGenC.String = ''
 

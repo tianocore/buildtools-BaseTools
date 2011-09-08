@@ -101,7 +101,7 @@ def CheckEnvVariable():
     os.environ["WORKSPACE"] = WorkspaceDir
 
     #
-    # Check EFI_SOURCE (R8 build convention). EDK_SOURCE will always point to ECP
+    # Check EFI_SOURCE (Edk build convention). EDK_SOURCE will always point to ECP
     #
     if "ECP_SOURCE" not in os.environ:
         os.environ["ECP_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
@@ -123,13 +123,13 @@ def CheckEnvVariable():
     os.environ["EDK_TOOLS_PATH"] = os.path.normcase(os.environ["EDK_TOOLS_PATH"])
     
     if not os.path.exists(EcpSourceDir):
-        EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
+        EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. Edk modules could not be built." % EcpSourceDir)
     elif ' ' in EcpSourceDir:
         EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path",
                         ExtraData=EcpSourceDir)
     if not os.path.exists(EdkSourceDir):
         if EdkSourceDir == EcpSourceDir:
-            EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
+            EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. Edk modules could not be built." % EdkSourceDir)
         else:
             EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE does not exist",
                             ExtraData=EdkSourceDir)
@@ -138,7 +138,7 @@ def CheckEnvVariable():
                         ExtraData=EdkSourceDir)
     if not os.path.exists(EfiSourceDir):
         if EfiSourceDir == EcpSourceDir:
-            EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. R8 modules could not be built." % EfiSourceDir)
+            EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. Edk modules could not be built." % EfiSourceDir)
         else:
             EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE does not exist",
                             ExtraData=EfiSourceDir)

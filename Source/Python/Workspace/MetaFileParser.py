@@ -425,10 +425,10 @@ class InfParser(MetaFileParser):
                 NextLine = CleanString(Content[Index + 1])
             if Line == '':
                 continue
-            if Line.find(DataType.TAB_COMMENT_R8_START) > -1:
+            if Line.find(DataType.TAB_COMMENT_EDK_START) > -1:
                 IsFindBlockComment = True
                 continue
-            if Line.find(DataType.TAB_COMMENT_R8_END) > -1:
+            if Line.find(DataType.TAB_COMMENT_EDK_END) > -1:
                 IsFindBlockComment = False
                 continue
             if IsFindBlockComment:
@@ -576,7 +576,7 @@ class InfParser(MetaFileParser):
         self._ValueList[0:len(TokenList)] = TokenList
         self._ValueList[1] = ReplaceMacro(self._ValueList[1], self._Macros)
 
-    ## [nmake] section parser (R8.x style only)
+    ## [nmake] section parser (Edk.x style only)
     def _NmakeParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
@@ -611,11 +611,11 @@ class InfParser(MetaFileParser):
         MODEL_UNKNOWN                   :   MetaFileParser._Skip,
         MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
         MODEL_META_DATA_BUILD_OPTION    :   MetaFileParser._BuildOptionParser,
-        MODEL_EFI_INCLUDE               :   _IncludeParser,                 # for R8.x modules
-        MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._CommonParser,   # for R8.x modules
+        MODEL_EFI_INCLUDE               :   _IncludeParser,                 # for Edk.x modules
+        MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._CommonParser,   # for Edk.x modules
         MODEL_EFI_LIBRARY_CLASS         :   MetaFileParser._PathParser,
         MODEL_META_DATA_PACKAGE         :   MetaFileParser._PathParser,
-        MODEL_META_DATA_NMAKE           :   _NmakeParser,                   # for R8.x modules
+        MODEL_META_DATA_NMAKE           :   _NmakeParser,                   # for Edk.x modules
         MODEL_PCD_FIXED_AT_BUILD        :   _PcdParser,
         MODEL_PCD_PATCHABLE_IN_MODULE   :   _PcdParser,
         MODEL_PCD_FEATURE_FLAG          :   _PcdParser,
@@ -897,7 +897,7 @@ class DscParser(MetaFileParser):
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         self._ValueList[0:len(TokenList)] = TokenList
 
-    ## Parse R8 style of library modules
+    ## Parse Edk style of library modules
     def _LibraryInstanceParser(self):
         self._ValueList[0] = self._CurrentLine
 

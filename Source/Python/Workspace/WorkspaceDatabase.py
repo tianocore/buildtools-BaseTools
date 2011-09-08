@@ -579,7 +579,7 @@ class DscBuildData(PlatformBuildClassObject):
                         continue
                     self._LibraryClasses[LibraryClass, ModuleType] = LibraryInstance
 
-            # for R8 style library instances, which are listed in different section
+            # for Edk style library instances, which are listed in different section
             Macros["EDK_SOURCE"] = GlobalData.gEcpSource
             RecordList = self._RawData[MODEL_EFI_LIBRARY_INSTANCE, self._Arch]
             for Record in RecordList:
@@ -1457,7 +1457,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Defs[Name] = Value
 
         #
-        # Retrieve information in sections specific to R8.x modules
+        # Retrieve information in sections specific to Edk.x modules
         #
         if self.AutoGenVersion >= 0x00010005:
             if not self._ModuleType:
@@ -1540,7 +1540,7 @@ class InfBuildData(ModuleBuildClassObject):
                         else:
                             Tool = ToolList[0]
                         ToolChain = "*_*_*_%s_FLAGS" % Tool
-                        ToolChainFamily = 'MSFT'    # R8.x only support MSFT tool chain
+                        ToolChainFamily = 'MSFT'    # Edk.x only support MSFT tool chain
                         #ignore not replaced macros in value
                         ValueList = GetSplitValueList(' ' + Value, '/D')
                         Dummy = ValueList[0]
@@ -1769,7 +1769,7 @@ class InfBuildData(ModuleBuildClassObject):
                 ToolCode = Record[3]
                 FeatureFlag = Record[4]
                 if self.AutoGenVersion < 0x00010005:
-                    # old module source files (R8)
+                    # old module source files (Edk)
                     File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, self._SourceOverridePath,
                                      '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
                     # check the file validation
@@ -1805,14 +1805,14 @@ class InfBuildData(ModuleBuildClassObject):
                 self._LibraryClasses[Lib] = Instance
         return self._LibraryClasses
 
-    ## Retrieve library names (for R8.x style of modules)
+    ## Retrieve library names (for Edk.x style of modules)
     def _GetLibraryNames(self):
         if self._Libraries == None:
             self._Libraries = []
             RecordList = self._RawData[MODEL_EFI_LIBRARY_INSTANCE, self._Arch, self._Platform]
             for Record in RecordList:
                 LibraryName = ReplaceMacro(Record[0], self._Macros, False)
-                # in case of name with '.lib' extension, which is unusual in R8.x inf
+                # in case of name with '.lib' extension, which is unusual in Edk.x inf
                 LibraryName = os.path.splitext(LibraryName)[0]
                 if LibraryName not in self._Libraries:
                     self._Libraries.append(LibraryName)
@@ -1866,7 +1866,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Guids[CName] = Value
         return self._Guids
 
-    ## Retrieve include paths necessary for this module (for R8.x style of modules)
+    ## Retrieve include paths necessary for this module (for Edk.x style of modules)
     def _GetIncludes(self):
         if self._Includes == None:
             self._Includes = []
