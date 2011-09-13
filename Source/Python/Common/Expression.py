@@ -79,7 +79,10 @@ class ValueExpression(object):
         if self._Value == None:
             try:
                 if not self._IsString():
-                    self._Value = eval(self.__repr__())
+                    if not self._IsByteArray():
+                        self._Value = eval(self.__repr__())
+                    else:
+                        self._Value = self.__repr__()
                 else:
                     # Don't do eval to string
                     self._Value = self.__repr__()
@@ -114,6 +117,12 @@ class ValueExpression(object):
                     Index += 1
             Index += 1
         return True
+    
+    def _IsByteArray(self):
+        if self._Expression.startswith("{") and self._Expression.endswith("}"):
+            return True
+        else:
+            return False
 
     def _Replace(self):
         Expression = self._Expression
