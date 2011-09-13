@@ -884,7 +884,10 @@ class DscParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         if not self._ValueList[1] in self.DefineKeywords:
-            EdkLogger.error('Parser', FORMAT_INVALID, "Unknown name: %s" % self._ValueList[1],
+            EdkLogger.error('Parser', FORMAT_INVALID,
+                            "Unknown keyword found: %s. "
+                            "If this is a macro you must "
+                            "add it as a DEFINE in the DSC" % self._ValueList[1],
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         self._Defines[self._ValueList[1]] = self._ValueList[2]
         self._ItemType = self.DataType[TAB_DSC_DEFINES.upper()]

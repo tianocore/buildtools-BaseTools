@@ -73,22 +73,27 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 and not self.InfModule.DxsFile and not self.InfModule.LibraryClass:
                 ModuleType = self.InfModule.ModuleType
                 PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, self.CurrentArch, GenFdsGlobalVariable.TargetName, GenFdsGlobalVariable.ToolChainTag]
-                PlatformModule = PlatformDataBase.Modules[str(self.InfModule)]
 
                 if ModuleType != DataType.SUP_MODULE_USER_DEFINED:
                     for LibraryClass in PlatformDataBase.LibraryClasses.GetKeys():
                         if LibraryClass.startswith("NULL") and PlatformDataBase.LibraryClasses[LibraryClass, ModuleType]:
                             self.InfModule.LibraryClasses[LibraryClass] = PlatformDataBase.LibraryClasses[LibraryClass, ModuleType]
 
-                for LibraryClass in PlatformModule.LibraryClasses:
-                    if LibraryClass.startswith("NULL"):
-                        self.InfModule.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
+                StrModule = str(self.InfModule)
+                PlatformModule = None
+                if StrModule in PlatformDataBase.Modules:
+                    PlatformModule = PlatformDataBase.Modules[StrModule]
+                    for LibraryClass in PlatformModule.LibraryClasses:
+                        if LibraryClass.startswith("NULL"):
+                            self.InfModule.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
 
                 DependencyList = [self.InfModule]
                 LibraryInstance = {}
                 DepexList = []
                 while len(DependencyList) > 0:
                     Module = DependencyList.pop(0)
+                    if not Module:
+                        continue
                     for Dep in Module.Depex[self.CurrentArch, ModuleType]:
                         if DepexList != []:
                             DepexList.append('AND')
@@ -102,7 +107,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     for LibName in Module.LibraryClasses:
                         if LibName in LibraryInstance:
                             continue
-                        if LibName in PlatformModule.LibraryClasses:
+                        if PlatformModule and LibName in PlatformModule.LibraryClasses:
                             LibraryPath = PlatformModule.LibraryClasses[LibName]
                         else:
                             LibraryPath = PlatformDataBase.LibraryClasses[LibName, ModuleType]
