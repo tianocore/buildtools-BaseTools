@@ -1387,19 +1387,21 @@ vfrFormDefinition :
                                                         CIfrLabel LObj3;
                                                         LObj3.SetLineNo(E->getLine());
                                                         LObj3.SetNumber (0xffff);  //add end label for UEFI, label number hardcode 0xffff
-                                                        //
-                                                        // Declare undefined Question
-                                                        //
-                                                        if (gCFormPkg.HavePendingUnassigned()) {
-                                                          gCFormPkg.DeclarePendingQuestion (
-                                                                      gCVfrVarDataTypeDB,
-                                                                      mCVfrDataStorage,
-                                                                      mCVfrQuestionDB,
-                                                                      &mFormsetGuid,
-                                                                      E->getLine()
-                                                                    );
-                                                        }
                                                       }
+
+                                                      //
+                                                      // Declare undefined Question so that they can be used in expression.
+                                                      //
+                                                      if (gCFormPkg.HavePendingUnassigned()) {
+                                                        gCFormPkg.DeclarePendingQuestion (
+                                                                    gCVfrVarDataTypeDB,
+                                                                    mCVfrDataStorage,
+                                                                    mCVfrQuestionDB,
+                                                                    &mFormsetGuid,
+                                                                    E->getLine()
+                                                                  );
+                                                      }
+
                                                       //
                                                       // mCVfrQuestionDB.PrintAllQuestion();
                                                       //
