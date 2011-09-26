@@ -614,7 +614,7 @@ cleanlib:
         self.FileDependency = self.GetFileDependency(
                                     SourceFileList,
                                     ForceIncludedFile,
-                                    self._AutoGenObject.IncludePathList
+                                    self._AutoGenObject.IncludePathList + self._AutoGenObject.BuildOptionIncPathList
                                     )
         DepSet = None
         for File in self.FileDependency:

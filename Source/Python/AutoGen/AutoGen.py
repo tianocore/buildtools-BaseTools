@@ -1788,6 +1788,7 @@ class ModuleAutoGen(AutoGen):
         self._DepexList               = None
         self._DepexExpressionList     = None
         self._BuildOption             = None
+        self._BuildOptionIncPathList  = None
         self._BuildTargets            = None
         self._IntroBuildTargetList    = None
         self._FinalBuildTargetList    = None
@@ -2043,6 +2044,50 @@ class ModuleAutoGen(AutoGen):
             self._BuildOption = self.PlatformInfo.ApplyBuildOption(self.Module)
         return self._BuildOption
 
+    ## Get include path list from tool option for the module build
+    #
+    #   @retval     list            The include path list
+    #
+    def _GetBuildOptionIncPathList(self):
+        if self._BuildOptionIncPathList == None:
+            #
+            # Regular expression for finding Include Directories, the difference between MSFT and INTEL/GCC
+            # is the former use /I , the Latter used -I to specify include directories
+            #
+            if self.PlatformInfo.ToolChainFamily in ('MSFT'):
+                gBuildOptIncludePattern = re.compile(r"(?:.*?)/I[ \t]*([^ ]*)", re.MULTILINE|re.DOTALL)
+            elif self.PlatformInfo.ToolChainFamily in ('INTEL', 'GCC'):
+                gBuildOptIncludePattern = re.compile(r"(?:.*?)-I[ \t]*([^ ]*)", re.MULTILINE|re.DOTALL)
+            
+            BuildOptionIncPathList = []
+            for Tool in ('CC', 'PP', 'VFRPP', 'ASLPP', 'ASLCC', 'APP', 'ASM'):
+                Attr = 'FLAGS'
+                try:
+                    FlagOption = self.BuildOption[Tool][Attr]
+                except KeyError:
+                    FlagOption = ''
+                
+                IncPathList = [NormPath(Path, self.Macros) for Path in gBuildOptIncludePattern.findall(FlagOption)]
+                #
+                # EDK II modules must not reference header files outside of the packages they depend on or 
+                # within the module's directory tree. Report error if violation.
+                #
+                if self.AutoGenVersion >= 0x00010005 and len(IncPathList) > 0:
+                    for Path in IncPathList:
+                        if (Path not in self.IncludePathList) and (CommonPath([Path, self.MetaFile.Dir]) != self.MetaFile.Dir):
+                            ErrMsg = "The include directory for the EDK II module in this line is invalid %s specified in %s FLAGS '%s'" % (Path, Tool, FlagOption) 
+                            EdkLogger.error("build", 
+                                            PARAMETER_INVALID,
+                                            ExtraData = ErrMsg, 
+                                            File = str(self.MetaFile))
+
+                
+                BuildOptionIncPathList += IncPathList
+            
+            self._BuildOptionIncPathList = BuildOptionIncPathList
+        
+        return self._BuildOptionIncPathList
+        
     ## Return a list of files which can be built from source
     #
     #  What kind of files can be built is determined by build rules in
@@ -2623,6 +2668,7 @@ class ModuleAutoGen(AutoGen):
     DxsFile                 = property(_GetDxsFile)
     DepexExpressionList     = property(_GetDepexExpressionTokenList)
     BuildOption             = property(_GetModuleBuildOption)
+    BuildOptionIncPathList  = property(_GetBuildOptionIncPathList)
     BuildCommand            = property(_GetBuildCommand)
 
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
