@@ -2340,7 +2340,7 @@ class ModuleAutoGen(AutoGen):
     #
     def _GetLibraryPcdList(self):
         if self._LibraryPcdList == None:
-            Pcds = {}
+            Pcds = sdict()
             if not self.IsLibrary:
                 # get PCDs from dependent libraries
                 for Library in self.DependentLibraryList:
