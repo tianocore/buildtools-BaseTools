@@ -47,7 +47,7 @@ class FV (FvClassObject):
         self.FvAddressFileName = None
         self.CapsuleName = None
         self.FvBaseAddress = None
-        self.FvFroceRebase = None
+        self.FvForceRebase = None
         
     ## AddToBuffer()
     #
@@ -135,7 +135,7 @@ class FV (FvClassObject):
                                 [self.InfFileName],
                                 AddressFile=FvInfoFileName,
                                 FfsList=FfsFileList,
-                                ForceRebase=self.FvFroceRebase
+                                ForceRebase=self.FvForceRebase
                                 )
 
         NewFvInfo = None
@@ -165,7 +165,7 @@ class FV (FvClassObject):
                                         [self.InfFileName],
                                         AddressFile=FvInfoFileName,
                                         FfsList=FfsFileList,
-                                        ForceRebase=self.FvFroceRebase
+                                        ForceRebase=self.FvForceRebase
                                         )
 
         #

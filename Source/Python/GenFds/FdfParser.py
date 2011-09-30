@@ -1956,15 +1956,15 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected FvForceRebase value", self.FileName, self.CurrentLineNumber)
 
-        if self.__Token.upper() not in ["TRUE", "FALSE", "0", "0x0", "0x00", "1", "0x1", "0x01"]:
+        if self.__Token.upper() not in ["TRUE", "FALSE", "0", "0X0", "0X00", "1", "0X1", "0X01"]:
             raise Warning("Unknown FvForceRebase value '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
         
-        if self.__Token.upper() in ["TRUE", "1", "0x1", "0x01"]:
-            Obj.FvFroceRebase = True
-        elif self.__Token.upper() in ["FALSE", "0", "0x0", "0x00"]:
-            Obj.FvFroceRebase = False
+        if self.__Token.upper() in ["TRUE", "1", "0X1", "0X01"]:
+            Obj.FvForceRebase = True
+        elif self.__Token.upper() in ["FALSE", "0", "0X0", "0X00"]:
+            Obj.FvForceRebase = False
         else:
-            Obj.FvFroceRebase = None
+            Obj.FvForceRebase = None
            
         return True
 

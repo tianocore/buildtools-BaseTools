@@ -75,7 +75,7 @@ class Capsule (CapsuleClassObject) :
                                 [self.CapInfFileName],
                                 Capsule=True,
                                 FfsList=CapFileList,
-                                ForceRebase=self.FvFroceRebase
+                                ForceRebase=self.FvForceRebase
                                 )
 
         GenFdsGlobalVariable.VerboseLogger( "\nGenerate %s Capsule Successfully" %self.UiCapsuleName)
