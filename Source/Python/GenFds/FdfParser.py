@@ -1610,9 +1610,13 @@ class FdfParser:
             self.__UndoToken()
             self.__GetRegionFileType( RegionObj)
 
-        else:
+        elif self.__Token == "DATA":
             self.__UndoToken()
             self.__GetRegionDataType( RegionObj)
+        else:
+            raise Warning("A valid region type was not found. "
+                          "Valid types are [SET, FV, CAPSULE, FILE, DATA]. This error occurred",
+                          self.FileName, self.CurrentLineNumber)
 
         return True
 
