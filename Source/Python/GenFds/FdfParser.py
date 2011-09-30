@@ -3836,7 +3836,7 @@ class FdfParser:
                     Overrides.PciRevision = self.__Token
                     continue
 
-                if self.__IsKeyword( "COMPRESS"):
+                if self.__IsKeyword( "PCI_COMPRESS"):
                     if not self.__IsToken( "="):
                         raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
                     if not self.__GetNextToken():
