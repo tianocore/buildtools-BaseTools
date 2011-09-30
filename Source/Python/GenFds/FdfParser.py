@@ -1853,6 +1853,8 @@ class FdfParser:
         self.__GetSetStatements(FvObj)
         
         self.__GetFvBaseAddress(FvObj)
+        
+        self.__GetFvForceRebase(FvObj)
 
         self.__GetFvAlignment(FvObj)
 
@@ -1930,10 +1932,42 @@ class FdfParser:
         IsValidBaseAddrValue = re.compile('^0[x|X][0-9a-fA-F]+')
 
         if not IsValidBaseAddrValue.match(self.__Token.upper()):
-            raise Warning("Unknown alignment value '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown FV base address value '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
         Obj.FvBaseAddress = self.__Token
-        return True    
-    
+        return True  
+      
+    ## __GetFvForceRebase() method
+    #
+    #   Get FvForceRebase for FV
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom FvForceRebase is got
+    #   @retval True        Successfully find a FvForceRebase statement
+    #   @retval False       Not able to find a FvForceRebase statement
+    #
+    def __GetFvForceRebase(self, Obj):
+
+        if not self.__IsKeyword("FvForceRebase"):
+            return False
+
+        if not self.__IsToken( "="):
+            raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected FvForceRebase value", self.FileName, self.CurrentLineNumber)
+
+        if self.__Token.upper() not in ["TRUE", "FALSE", "0", "0x0", "0x00", "1", "0x1", "0x01"]:
+            raise Warning("Unknown FvForceRebase value '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
+        
+        if self.__Token.upper() in ["TRUE", "1", "0x1", "0x01"]:
+            Obj.FvFroceRebase = True
+        elif self.__Token.upper() in ["FALSE", "0", "0x0", "0x00"]:
+            Obj.FvFroceRebase = False
+        else:
+            Obj.FvFroceRebase = None
+           
+        return True
+
 
     ## __GetFvAttributes() method
     #
