@@ -56,6 +56,10 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.PiSpecVersion = '0x00000000'
         self.InfModule = None
         self.FinalTargetSuffixMap = {}
+        self.CurrentLineNum = None
+        self.CurrentLineContent = None
+        self.FileName = None
+        self.InfFileName = None
 
     ## GetFinalTargetSuffixMap() method
     #

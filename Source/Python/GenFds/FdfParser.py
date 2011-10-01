@@ -2173,7 +2173,10 @@ class FdfParser:
                 ffsInf.KeepReloc = True
             else:
                 raise Warning("Unknown reloc strip flag '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
-
+        
+        ffsInf.CurrentLineNum = self.CurrentLineNumber
+        ffsInf.CurrentLineContent = self.__CurrentLine()
+        
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
             capsuleFfs.Ffs = ffsInf
@@ -2283,7 +2286,10 @@ class FdfParser:
                 self.__Token = 'PCD('+PcdPair[1]+'.'+PcdPair[0]+')'
                 
         FfsFileObj.NameGuid = self.__Token
-
+        
+        FfsFileObj.CurrentLineNum = self.CurrentLineNumber
+        FfsFileObj.CurrentLineContent = self.__CurrentLine()
+        
         self.__GetFilePart( FfsFileObj, MacroDict.copy())
 
         if ForCapsule:
