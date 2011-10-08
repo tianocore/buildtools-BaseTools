@@ -364,40 +364,44 @@ class WorkspaceAutoGen(AutoGen):
                         # Replace the PCD value.
                         #
                         _PcdName = FfsFile.NameGuid.lstrip("PCD(").rstrip(")")
+                        PcdFoundFlag = False
                         for Pa in self.AutoGenObjectList:
-                            for PcdItem in Pa.AllPcdList:
-                                if (PcdItem.TokenSpaceGuidCName + "." + PcdItem.TokenCName) == _PcdName:
-                                    #
-                                    # First convert from CFormatGuid to GUID string
-                                    #
-                                    _PcdGuidString = GuidStructureStringToGuidString(PcdItem.DefaultValue)
-                                    
-                                    if not _PcdGuidString:
+                            if not PcdFoundFlag:
+                                for PcdItem in Pa.AllPcdList:
+                                    if (PcdItem.TokenSpaceGuidCName + "." + PcdItem.TokenCName) == _PcdName:
                                         #
-                                        # Then try Byte array.
+                                        # First convert from CFormatGuid to GUID string
                                         #
-                                        _PcdGuidString = GuidStructureByteArrayToGuidString(PcdItem.DefaultValue)
+                                        _PcdGuidString = GuidStructureStringToGuidString(PcdItem.DefaultValue)
                                         
-                                    if not _PcdGuidString:
-                                        #
-                                        # Not Byte array or CFormat GUID, raise error.
-                                        #
-                                        EdkLogger.error("build",
-                                                        FORMAT_INVALID,
-                                                        "The format of PCD value is incorrect. PCD: %s , Value: %s\n"%(_PcdName, PcdItem.DefaultValue),
-                                                        ExtraData=self.FdfFile)
-                                    
-                                    if not _PcdGuidString.upper() in _GuidDict.keys():    
-                                        _GuidDict[_PcdGuidString.upper()] = FfsFile
-                                    else:
-                                        EdkLogger.error("build", 
-                                                        FORMAT_INVALID,
-                                                        "Duplicate GUID found for these lines: Line %d: %s and Line %d: %s. GUID: %s"%(FfsFile.CurrentLineNum,
-                                                                                                                                       FfsFile.CurrentLineContent,
-                                                                                                                                       _GuidDict[_PcdGuidString.upper()].CurrentLineNum,
-                                                                                                                                       _GuidDict[_PcdGuidString.upper()].CurrentLineContent,
-                                                                                                                                       FfsFile.NameGuid.upper()),
-                                                        ExtraData=self.FdfFile)                                                                       
+                                        if not _PcdGuidString:
+                                            #
+                                            # Then try Byte array.
+                                            #
+                                            _PcdGuidString = GuidStructureByteArrayToGuidString(PcdItem.DefaultValue)
+                                            
+                                        if not _PcdGuidString:
+                                            #
+                                            # Not Byte array or CFormat GUID, raise error.
+                                            #
+                                            EdkLogger.error("build",
+                                                            FORMAT_INVALID,
+                                                            "The format of PCD value is incorrect. PCD: %s , Value: %s\n"%(_PcdName, PcdItem.DefaultValue),
+                                                            ExtraData=self.FdfFile)
+                                        
+                                        if not _PcdGuidString.upper() in _GuidDict.keys():    
+                                            _GuidDict[_PcdGuidString.upper()] = FfsFile
+                                            PcdFoundFlag = True
+                                            break
+                                        else:
+                                            EdkLogger.error("build", 
+                                                            FORMAT_INVALID,
+                                                            "Duplicate GUID found for these lines: Line %d: %s and Line %d: %s. GUID: %s"%(FfsFile.CurrentLineNum,
+                                                                                                                                           FfsFile.CurrentLineContent,
+                                                                                                                                           _GuidDict[_PcdGuidString.upper()].CurrentLineNum,
+                                                                                                                                           _GuidDict[_PcdGuidString.upper()].CurrentLineContent,
+                                                                                                                                           FfsFile.NameGuid.upper()),
+                                                            ExtraData=self.FdfFile)                                                                       
                 
                     if not FfsFile.NameGuid.upper() in _GuidDict.keys():
                         _GuidDict[FfsFile.NameGuid.upper()] = FfsFile
