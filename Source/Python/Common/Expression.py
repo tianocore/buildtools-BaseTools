@@ -90,7 +90,10 @@ def ReplaceExprMacro(String, Macros, ExceptionList = None):
                 # $(ARCH) is replaced with "IA32 X64"
                 RetStr += '"' + Macros[Macro] + '"'
             else:
-                RetStr += Macros[Macro]
+                if Macros[Macro].strip() != "":
+                    RetStr += Macros[Macro]
+                else:
+                    RetStr += '""'
             RetStr += String[MacroEndPos+1:]
             String = RetStr
             MacroStartPos = String.find('$(')
@@ -173,13 +176,20 @@ class ValueExpression(object):
         return Val
 
     def __init__(self, Expression, SymbolTable={}):
+        self._NoProcess = False
         if type(Expression) != type(''):
             self._Expr = Expression
+            self._NoProcess = True
             return
 
         self._Expr = ReplaceExprMacro(Expression.strip(),
                                   SymbolTable,
                                   ['TARGET', 'TOOL_CHAIN_TAG', 'ARCH'])
+
+        if not self._Expr.strip():
+            self._NoProcess = True
+            return
+
         #
         # The symbol table including PCD and macro mapping
         #
@@ -194,7 +204,7 @@ class ValueExpression(object):
 
     # Public entry for this class
     def __call__(self):
-        if type(self._Expr) != type(''):
+        if self._NoProcess:
             return self._Expr
 
         Val = self._OrExpr()

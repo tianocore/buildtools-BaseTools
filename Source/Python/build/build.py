@@ -1625,7 +1625,7 @@ def ParseDefines(DefineList=[]):
                                 ExtraData=DefineTokenList[0])
                 
             if len(DefineTokenList) == 1:
-                DefineDict[DefineTokenList[0]] = ""
+                DefineDict[DefineTokenList[0]] = "TRUE"
             else:
                 DefineDict[DefineTokenList[0]] = DefineTokenList[1].strip()
     return DefineDict

@@ -172,7 +172,7 @@ def main():
                     else:
                         GlobalData.gCommandLineDefines[List[0].strip()] = List[1].strip()
                 else:
-                    GlobalData.gCommandLineDefines[List[0].strip()] = ""
+                    GlobalData.gCommandLineDefines[List[0].strip()] = "TRUE"
         os.environ["WORKSPACE"] = Workspace
 
         """call Workspace build create database"""
