@@ -2106,18 +2106,9 @@ class InfBuildData(ModuleBuildClassObject):
                     #
                     # Check hexadecimal token value length and format.
                     #
+                    ReIsValidPcdTokenValue = re.compile(r"^[0][x|X][0]*[0-9a-fA-F]{1,8}$", re.DOTALL)
                     if Pcd.TokenValue.startswith("0x") or Pcd.TokenValue.startswith("0X"):
-                        if len(Pcd.TokenValue) < 3 or len(Pcd.TokenValue) > 10:
-                            EdkLogger.error(
-                                    'build',
-                                    FORMAT_INVALID,
-                                    "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid:" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
-                                    File =self.MetaFile, Line=LineNo,
-                                    ExtraData=None
-                                    )                          
-                        try:
-                            int (Pcd.TokenValue, 16)
-                        except:
+                        if ReIsValidPcdTokenValue.match(Pcd.TokenValue) == None:
                             EdkLogger.error(
                                     'build',
                                     FORMAT_INVALID,
