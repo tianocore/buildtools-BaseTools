@@ -1682,8 +1682,13 @@ vfrStatementGoto :
       FormId "=" F3:Number ","                         << RefType = 2; FId = _STOFID(F3->getText()); >>
       Question "="
       (
-          QN3:StringIdentifier ","                     << mCVfrQuestionDB.GetQuestionId (QN3->getText (), NULL, QId, BitMask); >>
-        | QN3:Number ","                               << QId = _STOQID(QN3->getText()); >>
+          QN3:StringIdentifier ","                     << 
+                                                          mCVfrQuestionDB.GetQuestionId (QN3->getText (), NULL, QId, BitMask);
+                                                          if (QId == EFI_QUESTION_ID_INVALID) {
+                                                            _PCATCH(VFR_RETURN_UNDEFINED, QN3);
+                                                          }
+                                                       >>
+        | QN4:Number ","                               << QId = _STOQID(QN4->getText()); >>
       )
     )
     |
@@ -1730,7 +1735,7 @@ vfrStatementGoto :
                                                               QHObj = R2Obj;
                                                               R2Obj->SetLineNo(G->getLine());
                                                               R2Obj->SetFormId (FId);
-                                                              _PCATCH(R2Obj->SetQuestionId (QId), QN3);
+                                                              R2Obj->SetQuestionId (QId);
                                                               break;
                                                             }
                                                           case 1:
