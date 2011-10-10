@@ -456,7 +456,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         Arch = ''
         OutputPath = ''
         (ModulePath, FileName) = os.path.split(self.InfFileName)
-        Index = FileName.find('.')
+        Index = FileName.rfind('.')
         FileName = FileName[0:Index]
         Arch = "NoneArch"
         if self.CurrentArch != None:
