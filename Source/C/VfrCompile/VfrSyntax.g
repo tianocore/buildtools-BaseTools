@@ -1646,6 +1646,7 @@ vfrStatementGoto :
      EFI_QUESTION_ID     QId    = EFI_QUESTION_ID_INVALID;
      UINT32              BitMask;
      CIfrQuestionHeader  *QHObj = NULL;
+     CIfrOpHeader        *OHObj = NULL;
      CIfrRef             *R1Obj = NULL;
      CIfrRef2            *R2Obj = NULL;
      CIfrRef3            *R3Obj = NULL;
@@ -1705,6 +1706,7 @@ vfrStatementGoto :
                                                             {
                                                               R5Obj = new CIfrRef5;
                                                               QHObj = R5Obj;
+                                                              OHObj = R5Obj;
                                                               R5Obj->SetLineNo(G->getLine());
                                                               break;
                                                             }
@@ -1712,6 +1714,7 @@ vfrStatementGoto :
                                                             {
                                                               R4Obj = new CIfrRef4;
                                                               QHObj = R4Obj;
+                                                              OHObj = R4Obj;
                                                               R4Obj->SetLineNo(G->getLine());
                                                               R4Obj->SetDevicePath (DevPath);
                                                               R4Obj->SetFormSetId (FSId);
@@ -1723,6 +1726,7 @@ vfrStatementGoto :
                                                             {
                                                               R3Obj = new CIfrRef3;
                                                               QHObj = R3Obj;
+                                                              OHObj = R3Obj;
                                                               R3Obj->SetLineNo(G->getLine());
                                                               R3Obj->SetFormSetId (FSId);
                                                               R3Obj->SetFormId (FId);
@@ -1733,6 +1737,7 @@ vfrStatementGoto :
                                                             {
                                                               R2Obj = new CIfrRef2;
                                                               QHObj = R2Obj;
+                                                              OHObj = R2Obj;
                                                               R2Obj->SetLineNo(G->getLine());
                                                               R2Obj->SetFormId (FId);
                                                               R2Obj->SetQuestionId (QId);
@@ -1742,6 +1747,7 @@ vfrStatementGoto :
                                                             {
                                                               R1Obj = new CIfrRef;
                                                               QHObj = R1Obj;
+                                                              OHObj = R1Obj;
                                                               R1Obj->SetLineNo(G->getLine());
                                                               R1Obj->SetFormId (FId);
                                                               break;
@@ -1750,10 +1756,13 @@ vfrStatementGoto :
                                                           }
                                                        >>
   vfrQuestionHeader[*QHObj, QUESTION_REF]
-  { "," vfrStatementStatTagList }
   { "," F:FLAGS  "=" vfrGotoFlags[QHObj, F->getLine()] }
   {
     "," Key "=" KN:Number                              << AssignQuestionKey (*QHObj, KN); >>
+  }
+  {
+    E:"," 
+      vfrStatementQuestionOptionList                   << OHObj->SetScope(1); CRT_END_OP (E);>>
   }
   ";"                                                  << if (R1Obj != NULL) {delete R1Obj;} if (R2Obj != NULL) {delete R2Obj;} if (R3Obj != NULL) {delete R3Obj;} if (R4Obj != NULL) {delete R4Obj;} if (R5Obj != NULL) {delete R5Obj;}>>
   ;
