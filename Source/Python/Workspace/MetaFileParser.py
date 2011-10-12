@@ -602,6 +602,14 @@ class InfParser(MetaFileParser):
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<PcdCName>)",
                             File=self.MetaFile, Line=self._LineIndex+1)
 
+        # if value are 'True', 'true', 'TRUE' or 'False', 'false', 'FALSE', replace with integer 1 or 0.
+        if self._ValueList[2] != '':
+            InfPcdValueList = GetSplitValueList(TokenList[1], TAB_VALUE_SPLIT, 1)
+            if InfPcdValueList[0] in ['True', 'true', 'TRUE']:
+                self._ValueList[2] = TokenList[1].replace(InfPcdValueList[0], '1', 1);
+            elif InfPcdValueList[0] in ['False', 'false', 'FALSE']:
+                self._ValueList[2] = TokenList[1].replace(InfPcdValueList[0], '0', 1);
+
     ## [depex] section parser
     @ParseMacro
     def _DepexParser(self):
@@ -932,6 +940,12 @@ class DscParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
                             File=self.MetaFile, Line=self._LineIndex+1)
+        # if value are 'True', 'true', 'TRUE' or 'False', 'false', 'FALSE', replace with integer 1 or 0.
+        DscPcdValueList = GetSplitValueList(TokenList[1], TAB_VALUE_SPLIT, 1)
+        if DscPcdValueList[0] in ['True', 'true', 'TRUE']:
+            self._ValueList[2] = TokenList[1].replace(DscPcdValueList[0], '1', 1);
+        elif DscPcdValueList[0] in ['False', 'false', 'FALSE']:
+            self._ValueList[2] = TokenList[1].replace(DscPcdValueList[0], '0', 1);
 
     ## [components] section parser
     @ParseMacro
@@ -1546,6 +1560,11 @@ class DecParser(MetaFileParser):
         if not IsValid:
             EdkLogger.error('Parser', FORMAT_INVALID, Cause, ExtraData=self._CurrentLine,
                             File=self.MetaFile, Line=self._LineIndex+1)
+
+        if ValueList[0] in ['True', 'true', 'TRUE']:
+            ValueList[0] = '1'
+        elif ValueList[0] in ['False', 'false', 'FALSE']:
+            ValueList[0] = '0'
 
         self._ValueList[2] = ValueList[0].strip() + '|' + ValueList[1].strip() + '|' + ValueList[2].strip()
 
