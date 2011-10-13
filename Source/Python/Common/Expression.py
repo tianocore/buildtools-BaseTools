@@ -15,6 +15,7 @@
 from Common.GlobalData import *
 from CommonDataClass.Exceptions import BadExpression
 from CommonDataClass.Exceptions import SymbolNotFound
+from CommonDataClass.Exceptions import WrnExpression
 from Misc import GuidStringToGuidStructureString
 
 ERR_STRING_EXPR         = 'This operator cannot be used in string expression: [%s].'
@@ -28,7 +29,10 @@ ERR_VALID_TOKEN         = 'No more valid token found from rest of string: [%s].'
 ERR_EXPR_TYPE           = 'Different types found in expression.'
 ERR_OPERATOR_UNSUPPORT  = 'Unsupported operator: [%s]'
 ERR_REL_NOT_IN          = 'Expect "IN" after "not" operator.'
-ERR_BOOL_EXPR           = 'Operand of boolean type cannot be used in arithmetic expression.'
+WRN_BOOL_EXPR           = 'Operand of boolean type cannot be used in arithmetic expression.'
+WRN_EQCMP_STR_OTHERS    = '== Comparison between Operand of string type and Boolean/Number Type always return False.'
+WRN_NECMP_STR_OTHERS    = '!= Comparison between Operand of string type and Boolean/Number Type always return True.'
+ERR_RELCMP_STR_OTHERS   = 'Operator taking Operand of string type and Boolean/Number Type is not allowed: [%s].'
 ERR_STRING_CMP          = 'Unicode string and general string cannot be compared: [%s %s %s]'
 ERR_ARRAY_TOKEN         = 'Bad C array or C format GUID token: [%s].'
 ERR_ARRAY_ELE           = 'This must be HEX value for NList or Array: [%s].'
@@ -128,12 +132,11 @@ class ValueExpression(object):
 
     @staticmethod
     def Eval(Operator, Oprand1, Oprand2 = None):
+        WrnExp = None
+        
         if Operator not in ["==", "!=", ">=", "<=", ">", "<", "in", "not in"] and \
             (type(Oprand1) == type('') or type(Oprand2) == type('')):
             raise BadExpression(ERR_STRING_EXPR % Operator)
-
-        if type(Oprand1) == type(True) and Operator in ['+', '-', '&', '|', '^']:
-            raise BadExpression(ERR_BOOL_EXPR)
 
         TypeDict = {
             type(0)  : 0,
@@ -148,9 +151,31 @@ class ValueExpression(object):
                 raise BadExpression(ERR_STRING_EXPR % Operator)
             EvalStr = 'not Oprand1'
         else:
-            if TypeDict[type(Oprand1)] != TypeDict[type(Oprand2)]:
-                raise BadExpression(ERR_EXPR_TYPE)
-            if type(Oprand1) == type(''):
+            if Operator in ["+", "-"] and (type(True) in [type(Oprand1), type(Oprand2)]):
+                # Boolean in '+'/'-' will be evaluated but raise warning
+                WrnExp = WrnExpression(WRN_BOOL_EXPR)
+            elif type('') in [type(Oprand1), type(Oprand2)] and type(Oprand1)!= type(Oprand2):
+                # == between string and number/boolean will always return False, != return True
+                if Operator == "==":
+                    WrnExp = WrnExpression(WRN_EQCMP_STR_OTHERS)
+                    WrnExp.result = False
+                    raise WrnExp
+                elif Operator == "!=":
+                    WrnExp = WrnExpression(WRN_EQCMP_STR_OTHERS)
+                    WrnExp.result = True
+                    raise WrnExp
+                else:
+                    raise BadExpression(ERR_RELCMP_STR_OTHERS % Operator)
+            elif TypeDict[type(Oprand1)] != TypeDict[type(Oprand2)]: 
+                if Operator in ["==", "!=", ">=", "<=", ">", "<"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
+                    # comparison between number and boolean is allowed
+                    pass
+                if Operator in ['&', '|', '^', "&&", "||"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
+                    # bitwise and logical operation between number and boolean is allowed
+                    pass                
+                else:
+                    raise BadExpression(ERR_EXPR_TYPE)
+            if type(Oprand1) == type('') and type(Oprand2) == type(''):
                 if (Oprand1.startswith('L"') and not Oprand2.startswith('L"')) or \
                     (not Oprand1.startswith('L"') and Oprand2.startswith('L"')):
                     raise BadExpression(ERR_STRING_CMP % (Oprand1, Operator, Oprand2))
@@ -173,6 +198,10 @@ class ValueExpression(object):
                 Val = True
             else:
                 Val = False
+        
+        if WrnExp:
+            WrnExp.result = Val
+            raise WrnExp
         return Val
 
     def __init__(self, Expression, SymbolTable={}):

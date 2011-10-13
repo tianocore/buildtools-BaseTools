@@ -10,17 +10,14 @@
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
-##
-# Import Modules
-#
-import Common.EdkLogger as EdkLogger
-
-
 ## Exceptions used in Expression
 class EvaluationException(Exception):
     pass
 
 class BadExpression(EvaluationException):
+    pass
+
+class WrnExpression(Exception):
     pass
 
 ## Exceptions used in macro replacements

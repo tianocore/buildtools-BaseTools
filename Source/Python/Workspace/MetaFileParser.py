@@ -1182,6 +1182,15 @@ class DscParser(MetaFileParser):
             except SymbolNotFound, Exc:
                 EdkLogger.debug(EdkLogger.DEBUG_5, str(Exc), self._ValueList[1])
                 Result = False
+            except WrnExpression, Excpt:
+                # 
+                # Catch expression evaluation warning here. We need to report
+                # the precise number of line and return the evaluation result
+                #
+                EdkLogger.warn('Parser', "Suspicious expression: %s" % str(Excpt),
+                                File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
+                                Line=self._LineIndex+1)
+                Result = Excpt.result
 
         if self._ItemType in [MODEL_META_DATA_CONDITIONAL_STATEMENT_IF,
                               MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF,

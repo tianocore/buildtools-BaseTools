@@ -712,6 +712,15 @@ class FdfParser:
                 return ValueExpression(Expression, InputMacroDict)()
             except SymbolNotFound:
                 return False
+            except WrnExpression, Excpt:
+                # 
+                # Catch expression evaluation warning here. We need to report
+                # the precise number of line and return the evaluation result
+                #
+                EdkLogger.warn('Parser', "Suspicious expression: %s" % str(Excpt),
+                                File=self.FileName, ExtraData=self.__CurrentLine(), 
+                                Line=Line)
+                return Excpt.result
             except Exception, Excpt:
                 raise Warning("Invalid expression", *FileLineTuple)
         else:
