@@ -847,7 +847,7 @@ private:
 
 public:
   CIfrImage () : CIfrObj (EFI_IFR_IMAGE_OP, (CHAR8 **)&mImage),
-                 CIfrOpHeader (EFI_IFR_FORM_OP, &mImage->Header) {
+                 CIfrOpHeader (EFI_IFR_IMAGE_OP, &mImage->Header) {
     mImage->Id = EFI_IMAGE_ID_INVALID;
   }
 
