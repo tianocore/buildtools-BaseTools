@@ -117,7 +117,7 @@ class GenFdsGlobalVariable:
         if not BuildRuleDatabase:
             return {}
 
-        PathClassObj = PathClass(str(Inf.MetaFile).lstrip(GenFdsGlobalVariable.WorkSpaceDir),
+        PathClassObj = PathClass(Inf.MetaFile.File,
                                  GenFdsGlobalVariable.WorkSpaceDir)
         Macro = {}
         Macro["WORKSPACE"             ] = GenFdsGlobalVariable.WorkSpaceDir
