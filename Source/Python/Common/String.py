@@ -72,6 +72,21 @@ def GetSplitValueList(String, SplitTag = DataType.TAB_VALUE_SPLIT, MaxSplit = -1
 
     return ValueList
 
+## GetSplitList
+#
+# Get a value list from a string with multiple values splited with SplitString
+# The default SplitTag is DataType.TAB_VALUE_SPLIT
+# 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
+#
+# @param String:    The input string to be splitted
+# @param SplitStr:  The split key, default is DataType.TAB_VALUE_SPLIT
+# @param MaxSplit:  The max number of split values, default is -1
+#
+# @retval list() A list for splitted string
+#
+def GetSplitList(String, SplitStr = DataType.TAB_VALUE_SPLIT, MaxSplit = -1):
+    return map(lambda l: l.strip(), String.split(SplitStr, MaxSplit))
+
 ## MergeArches
 #
 # Find a key's all arches in dict, add the new arch to the list
