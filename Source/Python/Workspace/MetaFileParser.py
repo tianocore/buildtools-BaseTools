@@ -1169,6 +1169,13 @@ class DscParser(MetaFileParser):
                 self._SectionLocalMacros[Name] = Value
         elif self._ItemType == MODEL_META_DATA_GLOBAL_DEFINE:
             GlobalData.gEdkGlobal[Name] = Value
+        
+        #
+        # Keyword in [Defines] section can be used as Macros
+        #
+        if (self._ItemType == MODEL_META_DATA_HEADER) and (self._SectionType == MODEL_META_DATA_HEADER):
+            self._FileLocalMacros[Name] = Value
+            
         self._ValueList = [Type, Name, Value]
 
     def __ProcessDirective(self):
@@ -1271,9 +1278,11 @@ class DscParser(MetaFileParser):
         ValueList = GetSplitValueList(self._ValueList[2])
         if len(ValueList) > 1 and ValueList[1] == 'VOID*':
             PcdValue = ValueList[0]
+            ValueList[0] = str(ValueExpression(PcdValue, self._Macros)())
         else:
             PcdValue = ValueList[-1]
-        PcdValue = str(ValueExpression(PcdValue, self._Macros)())
+            ValueList[-1] = str(ValueExpression(PcdValue, self._Macros)())
+        
         self._ValueList[2] = '|'.join(ValueList)
 
     def __ProcessComponent(self):

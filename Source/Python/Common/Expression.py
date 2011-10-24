@@ -161,7 +161,7 @@ class ValueExpression(object):
                     WrnExp.result = False
                     raise WrnExp
                 elif Operator == "!=":
-                    WrnExp = WrnExpression(WRN_EQCMP_STR_OTHERS)
+                    WrnExp = WrnExpression(WRN_NECMP_STR_OTHERS)
                     WrnExp.result = True
                     raise WrnExp
                 else:
@@ -170,7 +170,7 @@ class ValueExpression(object):
                 if Operator in ["==", "!=", ">=", "<=", ">", "<"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
                     # comparison between number and boolean is allowed
                     pass
-                if Operator in ['&', '|', '^', "&&", "||"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
+                elif Operator in ['&', '|', '^', "&&", "||"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
                     # bitwise and logical operation between number and boolean is allowed
                     pass                
                 else:
