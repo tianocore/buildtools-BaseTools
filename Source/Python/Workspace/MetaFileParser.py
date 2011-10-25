@@ -65,7 +65,11 @@ def ParseMacro(Parser):
             if self._SectionType == MODEL_META_DATA_HEADER:
                 self._FileLocalMacros[Name] = Value
             else:
-                self._SectionLocalMacros[Name] = Value
+                SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
+                if SectionDictKey not in self._SectionsMacroDict:
+                    self._SectionsMacroDict[SectionDictKey] = {}
+                SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
+                SectionLocalMacros[Name] = Value
         # EDK_GLOBAL defined macros
         elif type(self) != DscParser:
             EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL can only be used in .dsc file",
@@ -138,7 +142,7 @@ class MetaFileParser(object):
         self._FileDir = self.MetaFile.Dir
         self._Defines = {}
         self._FileLocalMacros = {}
-        self._SectionLocalMacros = {}
+        self._SectionsMacroDict = {}
 
         # for recursive parsing
         self._Owner = [Owner]
@@ -293,8 +297,6 @@ class MetaFileParser(object):
                             File=self.MetaFile, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
         # If the section information is needed later, it should be stored in database
         self._ValueList[0] = self._SectionName
-        # Clear local macro defined in last section
-        self._SectionLocalMacros = {}
 
     ## [defines] section parser
     @ParseMacro
@@ -349,7 +351,19 @@ class MetaFileParser(object):
     def _GetMacros(self):
         Macros = {}
         Macros.update(self._FileLocalMacros)
-        Macros.update(self._SectionLocalMacros)
+        Macros.update(self._GetApplicableSectionMacro())
+        return Macros
+
+
+    ## Get section Macros that are applicable to current line, which may come from other sections 
+    ## that share the same name while scope is wider
+    def _GetApplicableSectionMacro(self):
+        Macros = {}
+
+        for SectionType, Scope1, Scope2 in self._SectionsMacroDict:
+            if (SectionType == self._SectionType) and (Scope1 == self._Scope[0][0] or Scope1 == "COMMON") and (Scope2 == self._Scope[0][1] or Scope2 == "COMMON"):
+                Macros.update(self._SectionsMacroDict[(SectionType, Scope1, Scope2)])
+
         return Macros
 
     _SectionParser  = {}
@@ -1005,7 +1019,7 @@ class DscParser(MetaFileParser):
     def _GetMacros(self):
         Macros = {}
         Macros.update(self._FileLocalMacros)
-        Macros.update(self._SectionLocalMacros)
+        Macros.update(self._GetApplicableSectionMacro())
         Macros.update(GlobalData.gEdkGlobal)
         Macros.update(GlobalData.gPlatformDefines)
         Macros.update(GlobalData.gCommandLineDefines)
@@ -1053,7 +1067,7 @@ class DscParser(MetaFileParser):
         self._DirectiveEvalStack = []
         self._FileWithError = self.MetaFile
         self._FileLocalMacros = {}
-        self._SectionLocalMacros = {}
+        self._SectionsMacroDict = {}
         GlobalData.gPlatformDefines = {}
 
         # Get all macro and PCD which has straitforward value
@@ -1120,7 +1134,6 @@ class DscParser(MetaFileParser):
             self._SectionType = self.DataType[self._SectionName]
         else:
             self._SectionType = MODEL_UNKNOWN
-        self._SectionLocalMacros = {}
 
     def __ProcessSubsectionHeader(self):
         self._SubsectionName = self._ValueList[0]
@@ -1135,7 +1148,7 @@ class DscParser(MetaFileParser):
             Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
             # Only use PCD whose value is straitforward (no macro and PCD)
             if self.SymbolPattern.findall(Value):
-                continue 
+                continue
             Name = TokenSpaceGuid + '.' + PcdName
             # Don't use PCD with different values.
             if Name in self._Symbols and self._Symbols[Name] != Value:
@@ -1166,7 +1179,11 @@ class DscParser(MetaFileParser):
             if self._SectionType == MODEL_META_DATA_HEADER:
                 self._FileLocalMacros[Name] = Value
             else:
-                self._SectionLocalMacros[Name] = Value
+                SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
+                if SectionDictKey not in self._SectionsMacroDict:
+                    self._SectionsMacroDict[SectionDictKey] = {}
+                SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
+                SectionLocalMacros[Name] = Value
         elif self._ItemType == MODEL_META_DATA_GLOBAL_DEFINE:
             GlobalData.gEdkGlobal[Name] = Value
         
