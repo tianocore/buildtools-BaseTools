@@ -1278,11 +1278,11 @@ class DscParser(MetaFileParser):
         ValueList = GetSplitValueList(self._ValueList[2])
         if len(ValueList) > 1 and ValueList[1] == 'VOID*':
             PcdValue = ValueList[0]
-            ValueList[0] = str(ValueExpression(PcdValue, self._Macros)())
+            ValueList[0] = ReplaceMacro(PcdValue, self._Macros)
         else:
             PcdValue = ValueList[-1]
-            ValueList[-1] = str(ValueExpression(PcdValue, self._Macros)())
-        
+            ValueList[-1] = ReplaceMacro(PcdValue, self._Macros)
+
         self._ValueList[2] = '|'.join(ValueList)
 
     def __ProcessComponent(self):
