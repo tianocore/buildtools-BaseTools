@@ -1817,8 +1817,8 @@ def Main():
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
-        #if Option != None and Option.debug != None:
-        EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
+        if Option != None and Option.debug != None:
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = X.args[0]
     except Warning, X:
         # error from Fdf parser
@@ -1853,7 +1853,8 @@ def Main():
                     ExtraData="\n(Please send email to edk2-buildtools-devel@lists.sourceforge.net for help, attaching following call stack trace!)\n",
                     RaiseError=False
                     )
-        EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
+        if Option != None and Option.debug != None:
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = CODE_ERROR
     finally:
         Utils.Progressor.Abort()
