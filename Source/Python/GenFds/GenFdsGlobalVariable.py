@@ -345,10 +345,6 @@ class GenFdsGlobalVariable:
     @staticmethod
     def GenerateSection(Output, Input, Type=None, CompressionType=None, Guid=None,
                         GuidHdrLen=None, GuidAttr=[], Ui=None, Ver=None, InputAlign=None):
-        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
-            return
-        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
-
         Cmd = ["GenSec"]
         if Type not in [None, '']:
             Cmd += ["-s", Type]
@@ -388,6 +384,13 @@ class GenFdsGlobalVariable:
         else:
             Cmd += ["-o", Output]
             Cmd += Input
+
+            CommandFile = Output + '.txt'
+            SaveFileOnChange(CommandFile, ' '.join(Cmd), False)
+            if not GenFdsGlobalVariable.NeedsUpdate(Output, list(Input) + [CommandFile]):
+                return
+            GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
             GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate section")
 
     @staticmethod
@@ -402,10 +405,6 @@ class GenFdsGlobalVariable:
     @staticmethod
     def GenerateFfs(Output, Input, Type, Guid, Fixed=False, CheckSum=False, Align=None,
                     SectionAlign=None):
-        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
-            return
-        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
-
         Cmd = ["GenFfs", "-t", Type, "-g", Guid]
         if Fixed == True:
             Cmd += ["-x"]
@@ -419,6 +418,13 @@ class GenFdsGlobalVariable:
             Cmd += ("-i", Input[I])
             if SectionAlign not in [None, '', []] and SectionAlign[I] not in [None, '']:
                 Cmd += ("-n", SectionAlign[I])
+
+        CommandFile = Output + '.txt'
+        SaveFileOnChange(CommandFile, ' '.join(Cmd), False)
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, list(Input) + [CommandFile]):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
         GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate FFS")
 
     @staticmethod
