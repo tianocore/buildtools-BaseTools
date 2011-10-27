@@ -1,7 +1,9 @@
 This directory contains the next generation of EDK II build tools and template files.
-Templates are located in the Conf directory, other directory contatins tools source.
+Templates are located in the Conf directory, while the tools executables for
+Microsoft Windows 32-bit Operating Systems are located in the Bin\Win32 directory, other 
+directory contatins tools source.
 
-Build step to generate the binary tools.
+1. Build step to generate the binary tools.
 
 === Windows/Visual Studio Notes ===
 
@@ -41,4 +43,10 @@ Please copy it manually from <PythonHome>\DLLs.
 The Python distributed with most recent Linux will have sqlite3 module
 built in. If not, please install sqlit3 package separately.
 
-17-July-2009
+2. The binary tools will be updated only after passing developer testing.
+
+Current state of the tools is Proto-Type - not all tool functions have been implemented
+and there may be bugs in these tools.  These tools are under constant development at
+this time.
+
+26-OCT-2011
