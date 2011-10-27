@@ -3629,6 +3629,7 @@ vfrExpressionUnaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   | question2refExp[$RootLevel, $ExpOpCount]
   | stringref2Exp[$RootLevel, $ExpOpCount]
   | toboolExp[$RootLevel, $ExpOpCount]
+  | tostringExp[$RootLevel, $ExpOpCount]
   | unintExp[$RootLevel, $ExpOpCount]
   | toupperExp[$RootLevel, $ExpOpCount]
   | tolwerExp[$RootLevel, $ExpOpCount]
