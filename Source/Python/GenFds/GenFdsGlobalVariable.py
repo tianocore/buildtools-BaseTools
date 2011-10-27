@@ -135,6 +135,7 @@ class GenFdsGlobalVariable:
         Macro["ARCH"                  ] = Arch
         Macro["TOOLCHAIN"             ] = GenFdsGlobalVariable.ToolChainTag
         Macro["TOOLCHAIN_TAG"         ] = GenFdsGlobalVariable.ToolChainTag
+        Macro["TOOL_CHAIN_TAG"        ] = GenFdsGlobalVariable.ToolChainTag
         Macro["TARGET"                ] = GenFdsGlobalVariable.TargetName
 
         Macro["BUILD_DIR"             ] = GenFdsGlobalVariable.OutputDirDict[Arch]

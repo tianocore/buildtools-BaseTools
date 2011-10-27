@@ -1946,6 +1946,7 @@ class ModuleAutoGen(AutoGen):
             self._Macro["ARCH"                  ] = self.Arch
             self._Macro["TOOLCHAIN"             ] = self.ToolChain
             self._Macro["TOOLCHAIN_TAG"         ] = self.ToolChain
+            self._Macro["TOOL_CHAIN_TAG"        ] = self.ToolChain
             self._Macro["TARGET"                ] = self.BuildTarget
 
             self._Macro["BUILD_DIR"             ] = self.PlatformInfo.BuildDir

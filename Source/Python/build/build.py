@@ -1226,6 +1226,7 @@ class Build():
             GlobalData.gGlobalDefines['TARGET'] = BuildTarget
             for ToolChain in self.ToolChainList:
                 GlobalData.gGlobalDefines['TOOLCHAIN'] = ToolChain
+                GlobalData.gGlobalDefines['TOOL_CHAIN_TAG'] = ToolChain
                 Wa = WorkspaceAutoGen(
                         self.WorkspaceDir,
                         self.PlatformFile,
@@ -1296,6 +1297,7 @@ class Build():
             GlobalData.gGlobalDefines['TARGET'] = BuildTarget
             for ToolChain in self.ToolChainList:
                 GlobalData.gGlobalDefines['TOOLCHAIN'] = ToolChain
+                GlobalData.gGlobalDefines['TOOL_CHAIN_TAG'] = ToolChain             
                 #
                 # module build needs platform build information, so get platform
                 # AutoGen first
@@ -1384,6 +1386,7 @@ class Build():
             GlobalData.gGlobalDefines['TARGET'] = BuildTarget
             for ToolChain in self.ToolChainList:
                 GlobalData.gGlobalDefines['TOOLCHAIN'] = ToolChain
+                GlobalData.gGlobalDefines['TOOL_CHAIN_TAG'] = ToolChain  
                 Wa = WorkspaceAutoGen(
                         self.WorkspaceDir,
                         self.PlatformFile,
