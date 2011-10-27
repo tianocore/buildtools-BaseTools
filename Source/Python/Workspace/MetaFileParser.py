@@ -77,10 +77,10 @@ def ParseMacro(Parser):
         elif self._SectionType != MODEL_META_DATA_HEADER:
             EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL can only be used under [Defines] section",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
-        elif Name in self._FileLocalMacros:
-            EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL defined a macro with the same name as one defined by 'DEFINE'",
+        elif (Name in self._FileLocalMacros) and (self._FileLocalMacros[Name] != Value):
+            EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL defined a macro with the same name and different value as one defined by 'DEFINE'",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
-
+            
         self._ValueList = [Type, Name, Value]
 
     return MacroParser
@@ -843,7 +843,7 @@ class DscParser(MetaFileParser):
                             File=self.MetaFile, Line=self._LineIndex+1,
                             ExtraData=self._CurrentLine)
 
-        ItemType = self.DataType[DirectiveName];
+        ItemType = self.DataType[DirectiveName]
         if ItemType == MODEL_META_DATA_CONDITIONAL_STATEMENT_ENDIF:
             # Remove all directives between !if and !endif, including themselves
             while self._DirectiveStack:
@@ -1091,8 +1091,8 @@ class DscParser(MetaFileParser):
                 Processer[self._ItemType]()
             except EvaluationException, Excpt:
                 # 
-                # Only catch expression evalution error here. We need to report
-                # the precise number of line on which the error occured
+                # Only catch expression evaluation error here. We need to report
+                # the precise number of line on which the error occurred
                 #
                 EdkLogger.error('Parser', FORMAT_INVALID, "Invalid expression: %s" % str(Excpt),
                                 File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
