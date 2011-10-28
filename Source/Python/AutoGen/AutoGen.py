@@ -238,8 +238,13 @@ class WorkspaceAutoGen(AutoGen):
         EdkLogger.verbose("\nFLASH_DEFINITION = %s" % self.FdfFile)
 
         if self.FdfFile:
+            #
+            # Mark now build in AutoGen Phase
+            #
+            GlobalData.gAutoGenPhase = True    
             Fdf = FdfParser(self.FdfFile.Path)
             Fdf.ParseFile()
+            GlobalData.gAutoGenPhase = False
             PcdSet = Fdf.Profile.PcdDict
             ModuleList = Fdf.Profile.InfList
             self.FdfProfile = Fdf.Profile
