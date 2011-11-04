@@ -310,9 +310,18 @@ gAutoGenHPrologueString = TemplateString("""
 #ifndef _${File}_${Guid}
 #define _${File}_${Guid}
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 """)
 
 gAutoGenHEpilogueString = """
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 """
 
