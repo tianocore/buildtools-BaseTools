@@ -769,7 +769,7 @@ class DscParser(MetaFileParser):
                 self._InSubsection = False
                 self._SubsectionType = MODEL_UNKNOWN
                 self._SubsectionName = ''
-                self._Owner.pop()
+                self._Owner[-1] = -1
                 continue
             # subsection header
             elif Line[0] == TAB_OPTION_START and Line[-1] == TAB_OPTION_END:
