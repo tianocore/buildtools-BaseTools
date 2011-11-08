@@ -27,7 +27,6 @@ COMMON_PYTHON=$(BASE_TOOLS_PATH)\Source\Python\Common\BuildToolError.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\Database.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\DataType.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\DecClassObject.py \
-              $(BASE_TOOLS_PATH)\Source\Python\Common\DecClassObjectLight.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\Dictionary.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\DscClassObject.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\EdkIIWorkspace.py \
@@ -38,7 +37,6 @@ COMMON_PYTHON=$(BASE_TOOLS_PATH)\Source\Python\Common\BuildToolError.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\GlobalData.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\Identification.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\InfClassObject.py \
-              $(BASE_TOOLS_PATH)\Source\Python\Common\InfClassObjectLight.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\MigrationUtilities.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\Misc.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\Parsing.py \
@@ -46,8 +44,6 @@ COMMON_PYTHON=$(BASE_TOOLS_PATH)\Source\Python\Common\BuildToolError.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\TargetTxtClassObject.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\ToolDefClassObject.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\VpdInfoFile.py \
-              $(BASE_TOOLS_PATH)\Source\Python\Common\XmlParser.py \
-              $(BASE_TOOLS_PATH)\Source\Python\Common\XmlRoutines.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\__init__.py \
               $(BASE_TOOLS_PATH)\Source\Python\Common\BuildVersion.py \
               $(BASE_TOOLS_PATH)\Source\Python\Workspace\BuildClassObject.py \
