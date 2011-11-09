@@ -1247,19 +1247,41 @@ class DscParser(MetaFileParser):
                                  MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF]:
                     break
         elif self._ItemType == MODEL_META_DATA_INCLUDE:
-            # The included file must be relative to workspace
-            IncludedFile = NormPath(ReplaceMacro(self._ValueList[1], self._Macros, RaiseError=True))
-            IncludedFile = PathClass(IncludedFile, GlobalData.gWorkspace)
-            ErrorCode, ErrorInfo = IncludedFile.Validate()
+            # The included file must be relative to workspace or same directory as DSC file
+            __IncludeMacros = {}
+            #
+            # Allow using system environment variables  in path after !include
+            #
+            __IncludeMacros['WORKSPACE'] = GlobalData.gGlobalDefines['WORKSPACE']
+            __IncludeMacros['ECP_SOURCE'] = GlobalData.gGlobalDefines['ECP_SOURCE']
+            __IncludeMacros['EFI_SOURCE'] = GlobalData.gGlobalDefines['EFI_SOURCE']
+            __IncludeMacros['EDK_SOURCE'] = GlobalData.gGlobalDefines['EDK_SOURCE']
+            #
+            # Allow using MACROs comes from [Defines] section to keep compatible. 
+            #
+            __IncludeMacros.update(self._Macros)
+            
+            IncludedFile = NormPath(ReplaceMacro(self._ValueList[1], __IncludeMacros, RaiseError=True))
+            #
+            # First search the include file under the same directory as DSC file
+            #
+            IncludedFile1 = PathClass(IncludedFile, self.MetaFile.Dir)
+            ErrorCode, ErrorInfo1 = IncludedFile1.Validate()
             if ErrorCode != 0:
-                EdkLogger.error('parser', ErrorCode, File=self._FileWithError, 
-                                Line=self._LineIndex+1, ExtraData=ErrorInfo)
+                #
+                # Also search file under the WORKSPACE directory
+                #
+                IncludedFile1 = PathClass(IncludedFile, GlobalData.gWorkspace)
+                ErrorCode, ErrorInfo2 = IncludedFile1.Validate()
+                if ErrorCode != 0:
+                    EdkLogger.error('parser', ErrorCode, File=self._FileWithError, 
+                                    Line=self._LineIndex+1, ExtraData=ErrorInfo1 + "\n"+ ErrorInfo2)
 
-            self._FileWithError = IncludedFile
+            self._FileWithError = IncludedFile1
 
-            IncludedFileTable = MetaFileStorage(self._Table.Cur, IncludedFile, MODEL_FILE_DSC, False)
+            IncludedFileTable = MetaFileStorage(self._Table.Cur, IncludedFile1, MODEL_FILE_DSC, False)
             Owner = self._Content[self._ContentIndex-1][0]
-            Parser = DscParser(IncludedFile, self._FileType, IncludedFileTable, 
+            Parser = DscParser(IncludedFile1, self._FileType, IncludedFileTable, 
                                Owner=Owner, From=Owner)
 
             # set the parser status with current status
