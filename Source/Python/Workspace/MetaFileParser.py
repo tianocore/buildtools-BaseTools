@@ -1302,7 +1302,10 @@ class DscParser(MetaFileParser):
             Records = IncludedFileTable.GetAll()
             if Records:
                 self._Content[self._ContentIndex:self._ContentIndex] = Records
-
+                self._Content.pop(self._ContentIndex-1)
+                self._ValueList = None
+                self._ContentIndex -= 1
+                
     def __ProcessSkuId(self):
         self._ValueList = [ReplaceMacro(Value, self._Macros, RaiseError=True)
                            for Value in self._ValueList]
