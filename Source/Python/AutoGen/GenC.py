@@ -310,11 +310,14 @@ gAutoGenHPrologueString = TemplateString("""
 #ifndef _${File}_${Guid}
 #define _${File}_${Guid}
 
+""")
+
+gAutoGenHCppPrologueString = """
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-""")
+"""
 
 gAutoGenHEpilogueString = """
 
@@ -1970,6 +1973,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gAutoGenHeaderString.Replace({'FileName':'AutoGen.h'}))
     # header file Prologue
     AutoGenH.Append(gAutoGenHPrologueString.Replace({'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')}))
+    AutoGenH.Append(gAutoGenHCppPrologueString)
     if Info.AutoGenVersion >= 0x00010005:
         # header files includes
         AutoGenH.Append("#include <%s>\n" % gBasicHeaderFile)
@@ -2042,7 +2046,6 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH, UniGenCFlag, UniGenBinBuffer):
         StringH.Append(gAutoGenHeaderString.Replace({'FileName':FileName}))
         StringH.Append(gAutoGenHPrologueString.Replace({'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')}))
         CreateUnicodeStringCode(Info, AutoGenC, StringH, UniGenCFlag, UniGenBinBuffer)
-        StringH.Append("\n#ifdef __cplusplus\n}\n#endif\n")
         StringH.Append("\n#endif\n")
         AutoGenH.Append('#include "%s"\n' % FileName)
 
