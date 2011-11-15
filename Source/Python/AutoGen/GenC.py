@@ -2042,6 +2042,7 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH, UniGenCFlag, UniGenBinBuffer):
         StringH.Append(gAutoGenHeaderString.Replace({'FileName':FileName}))
         StringH.Append(gAutoGenHPrologueString.Replace({'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')}))
         CreateUnicodeStringCode(Info, AutoGenC, StringH, UniGenCFlag, UniGenBinBuffer)
+        StringH.Append("\n#ifdef __cplusplus\n}\n#endif\n")
         StringH.Append("\n#endif\n")
         AutoGenH.Append('#include "%s"\n' % FileName)
 
