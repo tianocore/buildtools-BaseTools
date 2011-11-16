@@ -1989,6 +1989,7 @@ vfrStatementDate :
       Prompt "=" "STRING_TOKEN" "\(" DP:Number "\)" ","
       Help   "=" "STRING_TOKEN" "\(" DH:Number "\)" ","
       minMaxDateStepDefault[Val.date, 2]
+      { G:FLAGS "=" vfrDateFlags[DObj, G->getLine()] "," }
                                                        <<
                                                           mCVfrQuestionDB.RegisterOldDateQuestion (VarIdStr[0], VarIdStr[1], VarIdStr[2], QId);
                                                           DObj.SetQuestionId (QId);
@@ -2449,6 +2450,7 @@ vfrStatementTime :
       Prompt "=" "STRING_TOKEN" "\(" SP:Number "\)" ","
       Help   "=" "STRING_TOKEN" "\(" SH:Number "\)" ","
       minMaxTimeStepDefault[Val.time, 2]
+      { G:FLAGS "=" vfrTimeFlags[TObj, G->getLine()] "," }
                                                        <<
                                                           mCVfrQuestionDB.RegisterOldTimeQuestion (VarIdStr[0], VarIdStr[1], VarIdStr[2], QId);
                                                           TObj.SetQuestionId (QId);
