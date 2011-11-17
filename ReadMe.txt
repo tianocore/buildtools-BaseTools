@@ -43,10 +43,4 @@ Please copy it manually from <PythonHome>\DLLs.
 The Python distributed with most recent Linux will have sqlite3 module
 built in. If not, please install sqlit3 package separately.
 
-2. The binary tools will be updated only after passing developer testing.
-
-Current state of the tools is Proto-Type - not all tool functions have been implemented
-and there may be bugs in these tools.  These tools are under constant development at
-this time.
-
 26-OCT-2011
