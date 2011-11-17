@@ -61,6 +61,7 @@ COMMON_PYTHON=$(BASE_TOOLS_PATH)\Source\Python\Common\BuildToolError.py \
               $(BASE_TOOLS_PATH)\Source\Python\Autogen\UniClassObject.py \
               $(BASE_TOOLS_PATH)\Source\Python\Autogen\__init__.py
 
+UPT_BUILDVERSION_PYTHON=$(BASE_TOOLS_PATH)\Source\Python\UPT\BuildVersion.py
               
 all: SetPythonPath $(APPLICATIONS)
 
@@ -100,7 +101,7 @@ $(BIN_DIR)\PatchPcdValue.exe: $(BASE_TOOLS_PATH)\Source\Python\PatchPcdValue\Pat
 $(BIN_DIR)\BPDG.exe: $(BASE_TOOLS_PATH)\Source\Python\BPDG\BPDG.py $(COMMON_PYTHON)
   @pushd . & @cd BPDG & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) BPDG.py & @popd
 
-$(BIN_DIR)\UPT.exe: $(BASE_TOOLS_PATH)\Source\Python\UPT\UPT.py $(BASE_TOOLS_PATH)\Source\Python\UPT\UPT.py $(COMMON_PYTHON)
+$(BIN_DIR)\UPT.exe: $(BASE_TOOLS_PATH)\Source\Python\UPT\UPT.py $(UPT_BUILDVERSION_PYTHON)
   @pushd . & @cd UPT & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) UPT.py & @popd
 
 clean:
