@@ -2953,6 +2953,9 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected FV name", self.FileName, self.CurrentLineNumber)
 
+        if self.__Token.upper() not in self.Profile.FvDict.keys():
+            raise Warning("FV name does not exist", self.FileName, self.CurrentLineNumber)
+
         CapsuleFv = CapsuleData.CapsuleFv()
         CapsuleFv.FvName = self.__Token
         CapsuleObj.CapsuleDataList.append(CapsuleFv)
@@ -2977,6 +2980,9 @@ class FdfParser:
 
         if not self.__GetNextToken():
             raise Warning("expected FD name", self.FileName, self.CurrentLineNumber)
+
+        if self.__Token.upper() not in self.Profile.FdDict.keys():
+            raise Warning("FD name does not exist", self.FileName, self.CurrentLineNumber)
 
         CapsuleFd = CapsuleData.CapsuleFd()
         CapsuleFd.FdName = self.__Token
