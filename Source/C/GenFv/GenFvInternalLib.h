@@ -226,7 +226,7 @@ typedef struct {
   BOOLEAN                 FvNameGuidSet;
   CHAR8                   FvExtHeaderFile[_MAX_PATH];
   UINTN                   Size;
-  EFI_FVB_ATTRIBUTES      FvAttributes;
+  EFI_FVB_ATTRIBUTES_2    FvAttributes;
   CHAR8                   FvName[_MAX_PATH];
   EFI_FV_BLOCK_MAP_ENTRY  FvBlocks[MAX_NUMBER_OF_FV_BLOCKS];
   CHAR8                   FvFiles[MAX_NUMBER_OF_FILES_IN_FV][_MAX_PATH];

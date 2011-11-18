@@ -14,7 +14,7 @@
   File Name: PiFirmwareVolume.h
 
   @par Revision Reference:
-  Version 1.0.
+  Version 1.2C
 
 **/
 
@@ -33,7 +33,7 @@ typedef UINT32  EFI_FV_FILE_ATTRIBUTES;
 #define EFI_FV_FILE_ATTRIB_FIXED          0x00000100
 #define EFI_FV_FILE_ATTRIB_MEMORY_MAPPED  0x00000200
 
-typedef UINT32  EFI_FVB_ATTRIBUTES;
+typedef UINT32  EFI_FVB_ATTRIBUTES_2;
 
 // 
 // Attributes bit definitions
@@ -101,7 +101,7 @@ typedef struct {
   EFI_GUID                  FileSystemGuid;
   UINT64                    FvLength;
   UINT32                    Signature;
-  EFI_FVB_ATTRIBUTES        Attributes;
+  EFI_FVB_ATTRIBUTES_2      Attributes;
   UINT16                    HeaderLength;
   UINT16                    Checksum;
   UINT16                    ExtHeaderOffset;
@@ -139,8 +139,20 @@ typedef struct {
   // Array of GUIDs. 
   // Each GUID represents an OEM file type.
   // 
-  EFI_GUID  Types[1];
+  // EFI_GUID  Types[1];
+  //
 } EFI_FIRMWARE_VOLUME_EXT_ENTRY_OEM_TYPE;
 
+#define EFI_FV_EXT_TYPE_GUID_TYPE 0x0002
+typedef struct {
+  EFI_FIRMWARE_VOLUME_EXT_ENTRY     Hdr;
+  EFI_GUID                          FormatType;
+
+  //
+  // An arry of bytes of length Length.
+  //
+  // UINT8                             Data[1];
+  //
+} EFI_FIRMWARE_VOLUME_EXT_ENTRY_GUID_TYPE;
 
 #endif
