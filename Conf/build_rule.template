@@ -195,10 +195,8 @@
         $(DEBUG_DIR)(+)${s_dir}(+)${s_base}.c
 
     <Command>
-        -$(MD) $(OUTPUT_DIR)(+)${s_dir} > NUL 2>&1
-        "$(VFRPP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
-        -$(MD) ${d_path} > NUL 2>&1
-        "$(VFR)" $(VFR_FLAGS) --string-db $(OUTPUT_DIR)(+)$(MODULE_NAME)StrDefs.hpk --output-directory ${d_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
+        "$(VFRPP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_base}.i
+        "$(VFR)" $(VFR_FLAGS) --string-db $(OUTPUT_DIR)(+)$(MODULE_NAME)StrDefs.hpk --output-directory ${d_path} $(OUTPUT_DIR)(+)${s_base}.i
 
 [Object-File]
     <InputFile>
@@ -513,9 +511,7 @@
         $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.hpk
 
     <Command>
-        -$(MD) $(OUTPUT_DIR)(+)${s_dir} > NUL 2>&1
         "$(VFRPP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
-        -$(MD) $(OUTPUT_DIR)(+)${s_dir} > NUL 2>&1
         "$(VFR)" $(VFR_FLAGS) --create-ifr-package --string-db $(OUTPUT_DIR)(+)$(MODULE_NAME)StrDefs.hpk --output-directory $(OUTPUT_DIR)(+)${s_dir} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
 
 [Hii-Binary-Package.UEFI_HII]
