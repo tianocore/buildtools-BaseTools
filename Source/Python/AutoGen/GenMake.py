@@ -1321,16 +1321,16 @@ ${END}\t@cd $(BUILD_DIR)\n
             # macros passed to GenFds
             MacroList.append('"%s=%s"' % ("EFI_SOURCE", GlobalData.gEfiSource.replace('\\', '\\\\')))
             MacroList.append('"%s=%s"' % ("EDK_SOURCE", GlobalData.gEdkSource.replace('\\', '\\\\')))
-            for MacroName in GlobalData.gGlobalDefines:
-                if GlobalData.gGlobalDefines[MacroName] != "":
-                    MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName].replace('\\', '\\\\')))
+            MacroDict = {}
+            MacroDict.update(GlobalData.gGlobalDefines)
+            MacroDict.update(GlobalData.gCommandLineDefines)
+            MacroDict.pop("EFI_SOURCE", "dummy")
+            MacroDict.pop("EDK_SOURCE", "dummy")
+            for MacroName in MacroDict:
+                if MacroDict[MacroName] != "":
+                    MacroList.append('"%s=%s"' % (MacroName, MacroDict[MacroName].replace('\\', '\\\\')))
                 else:
                     MacroList.append('"%s"' % MacroName)
-            for MacroName in GlobalData.gCommandLineDefines:
-                if GlobalData.gCommandLineDefines[MacroName] != "":
-                    MacroList.append('"%s=%s"' % (MacroName, GlobalData.gCommandLineDefines[MacroName].replace('\\', '\\\\')))
-                else:
-                    MacroList.append('"%s"' % MacroName)                
         else:
             FdfFileList = []
 
