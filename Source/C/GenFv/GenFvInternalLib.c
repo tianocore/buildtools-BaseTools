@@ -1535,7 +1535,7 @@ Returns:
       //
       Status = FindApResetVectorPosition (FvImage, &BytePointer);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 3000, "Invalid", "Cannot find the appropriate location in FvImage to add Ap reset vector!");
+        Error (NULL, 0, 3000, "Invalid", "FV image does not have enough space to place AP reset vector. The FV image needs to reserve at least 4KB of unused space.");
         return EFI_ABORTED;
       }
     }
