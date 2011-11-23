@@ -59,10 +59,17 @@ def ParseMacro(Parser):
             EdkLogger.error('Parser', FORMAT_INVALID, "The macro name must be in the pattern [A-Z][A-Z0-9_]*",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
-        self._ItemType = self.DataType[Type]
+        Value = ReplaceMacro(Value, self._Macros)
+        self._ItemType = MODEL_META_DATA_DEFINE
         # DEFINE defined macros
-        if self._ItemType == MODEL_META_DATA_DEFINE:
-            if self._SectionType == MODEL_META_DATA_HEADER:
+        if Type == TAB_DSC_DEFINES_DEFINE:
+            if type(self) == DecParser:
+                if MODEL_META_DATA_HEADER in self._SectionType:
+                    self._FileLocalMacros[Name] = Value
+                else:
+                    for Scope in self._Scope:
+                        self._SectionsMacroDict.setdefault((Scope[2], Scope[0], Scope[1]), {})[Name] = Value
+            elif self._SectionType == MODEL_META_DATA_HEADER:
                 self._FileLocalMacros[Name] = Value
             else:
                 SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
@@ -310,6 +317,7 @@ class MetaFileParser(object):
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
+        self._ValueList = [ReplaceMacro(Value, self._Macros) for Value in self._ValueList]
         Name, Value = self._ValueList[1], self._ValueList[2]
         # Sometimes, we need to make differences between EDK and EDK2 modules 
         if Name == 'INF_VERSION':
@@ -319,7 +327,6 @@ class MetaFileParser(object):
                 EdkLogger.error('Parser', FORMAT_INVALID, "Invalid version number",
                                 ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
-        Value = ReplaceMacro(Value, self._Macros)
         if type(self) == InfParser and self._Version < 0x00010005:
             # EDK module allows using defines as macros
             self._FileLocalMacros[Name] = Value
@@ -359,11 +366,10 @@ class MetaFileParser(object):
     ## that share the same name while scope is wider
     def _GetApplicableSectionMacro(self):
         Macros = {}
-
-        for SectionType, Scope1, Scope2 in self._SectionsMacroDict:
-            if (SectionType == self._SectionType) and (Scope1 == self._Scope[0][0] or Scope1 == "COMMON") and (Scope2 == self._Scope[0][1] or Scope2 == "COMMON"):
-                Macros.update(self._SectionsMacroDict[(SectionType, Scope1, Scope2)])
-
+        for Scope1, Scope2 in [("COMMON", "COMMON"), ("COMMON", self._Scope[0][1]),
+                               (self._Scope[0][0], "COMMON"), (self._Scope[0][0], self._Scope[0][1])]:
+            if (self._SectionType, Scope1, Scope2) in self._SectionsMacroDict:
+                Macros.update(self._SectionsMacroDict[(self._SectionType, Scope1, Scope2)])
         return Macros
 
     _SectionParser  = {}
@@ -499,7 +505,8 @@ class InfParser(MetaFileParser):
             self._ValueList = ['','','']
             # parse current line, result will be put in self._ValueList
             self._SectionParser[self._SectionType](self)
-            if self._ValueList == None:
+            if self._ValueList == None or self._ItemType == MODEL_META_DATA_DEFINE:
+                self._ItemType = -1
                 continue
             #
             # Model, Value1, Value2, Value3, Arch, Platform, BelongsToItem=-1,
@@ -1380,6 +1387,7 @@ class DecParser(MetaFileParser):
     # DEC file supported data types (one type per section)
     DataType = {
         TAB_DEC_DEFINES.upper()                     :   MODEL_META_DATA_HEADER,
+        TAB_DSC_DEFINES_DEFINE                      :   MODEL_META_DATA_DEFINE,
         TAB_INCLUDES.upper()                        :   MODEL_EFI_INCLUDE,
         TAB_LIBRARY_CLASSES.upper()                 :   MODEL_EFI_LIBRARY_CLASS,
         TAB_GUIDS.upper()                           :   MODEL_EFI_GUID,
@@ -1441,7 +1449,8 @@ class DecParser(MetaFileParser):
             # section content
             self._ValueList = ['','','']
             self._SectionParser[self._SectionType[0]](self)
-            if self._ValueList == None:
+            if self._ValueList == None or self._ItemType == MODEL_META_DATA_DEFINE:
+                self._ItemType = -1
                 self._Comments = []
                 continue
 
@@ -1481,6 +1490,14 @@ class DecParser(MetaFileParser):
                         )
             self._Comments = []
         self._Done()
+
+    def _GetApplicableSectionMacro(self):
+        Macros = {}
+        for S1, S2, SectionType in self._Scope:
+            for Scope1, Scope2 in [("COMMON", "COMMON"), ("COMMON", S2), (S1, "COMMON"), (S1, S2)]:
+                if (SectionType, Scope1, Scope2) in self._SectionsMacroDict:
+                    Macros.update(self._SectionsMacroDict[(SectionType, Scope1, Scope2)])
+        return Macros
 
     ## Section header parser
     #
