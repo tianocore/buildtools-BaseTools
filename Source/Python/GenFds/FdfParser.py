@@ -52,6 +52,8 @@ from Common.Expression import *
 from Common import GlobalData
 from Common.String import ReplaceMacro
 
+from Common.Misc import tdict
+
 import re
 import os
 
@@ -77,10 +79,6 @@ RegionSizePattern = re.compile("\s*(?P<base>(?:0x|0X)?[a-fA-F0-9]+)\s*\|\s*(?P<s
 RegionSizeGuidPattern = re.compile("\s*(?P<base>\w+\.\w+)\s*\|\s*(?P<size>\w+\.\w+)\s*")
 
 IncludeFileList = []
-# Macro passed from command line, which has greatest priority and can NOT be overridden by those in FDF
-InputMacroDict = {}
-# All Macro values when parsing file, not replace existing Macro
-AllMacroList = []
 
 def GetRealFileLine (File, Line):
 
@@ -215,13 +213,16 @@ class FdfParser:
         self.__Token = ""
         self.__SkippedChars = ""
 
+        # Used to section info
+        self.__CurSection = []
+        # Key: [section name, UI name, arch]
+        # Value: {MACRO_NAME : MACRO_VALUE}
+        self.__MacroDict = tdict(True, 3)
+        self.__PcdDict = {}
+
         self.__WipeOffArea = []
         if GenFdsGlobalVariable.WorkSpaceDir == '':
             GenFdsGlobalVariable.WorkSpaceDir = os.getenv("WORKSPACE")
-
-        InputMacroDict.update(GlobalData.gPlatformDefines)
-        InputMacroDict.update(GlobalData.gGlobalDefines)
-        InputMacroDict.update(GlobalData.gCommandLineDefines)
 
     ## __IsWhiteSpace() method
     #
@@ -381,30 +382,6 @@ class FdfParser:
         self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesList]
         self.Profile.FileLinesList[-1].append(' ')
 
-    def __ReplaceMacros(self, Str, File, Line):
-        MacroEnd = 0
-        while Str.find('$(', MacroEnd) >= 0:
-            MacroStart = Str.find('$(', MacroEnd)
-            if Str.find(')', MacroStart) > 0:
-                MacroEnd = Str.find(')', MacroStart)
-                Name = Str[MacroStart + 2 : MacroEnd]
-                Value = None
-                if Name in InputMacroDict:
-                    Value = InputMacroDict[Name]
-
-                else:
-                    for Profile in AllMacroList:
-                        if Profile.FileName == File and Profile.MacroName == Name and Profile.DefinedAtLine <= Line:
-                            Value = Profile.MacroValue
-
-                if Value != None:
-                    Str = Str.replace('$(' + Name + ')', Value)
-                    MacroEnd = MacroStart + len(Value)
-
-            else:
-                raise Warning("Macro not complete", self.FileName, self.CurrentLineNumber)
-        return Str
-
     def __ReplaceFragment(self, StartPos, EndPos, Value = ' '):
         if StartPos[0] == EndPos[0]:
             Offset = StartPos[1]
@@ -446,7 +423,67 @@ class FdfParser:
                           self.FileName, self.CurrentLineNumber)
         MacroName = MacroName[2:-1]
         return MacroName, NotFlag
-    
+
+    def __SetMacroValue(self, Macro, Value):
+        if not self.__CurSection:
+            return
+
+        MacroDict = {}
+        if not self.__MacroDict[self.__CurSection[0], self.__CurSection[1], self.__CurSection[2]]:
+            self.__MacroDict[self.__CurSection[0], self.__CurSection[1], self.__CurSection[2]] = MacroDict
+        else:
+            MacroDict = self.__MacroDict[self.__CurSection[0], self.__CurSection[1], self.__CurSection[2]]
+        MacroDict[Macro] = Value
+
+    def __GetMacroValue(self, Macro):
+        # Highest priority
+        if Macro in GlobalData.gCommandLineDefines:
+            return GlobalData.gCommandLineDefines[Macro]
+        if Macro in GlobalData.gGlobalDefines:
+            return GlobalData.gGlobalDefines[Macro]
+
+        if self.__CurSection:
+            MacroDict = self.__MacroDict[
+                        self.__CurSection[0],
+                        self.__CurSection[1],
+                        self.__CurSection[2]
+            ]
+            if MacroDict and Macro in MacroDict:
+                return MacroDict[Macro]
+
+        # Lowest priority
+        if Macro in GlobalData.gPlatformDefines:
+            return GlobalData.gPlatformDefines[Macro]
+        return None
+
+    def __SectionHeaderParser(self, Section):
+        # [Defines]
+        # [FD.UiName]: use dummy instead if UI name is optional
+        # [FV.UiName]
+        # [Capsule.UiName]
+        # [Rule]: don't take rule section into account, macro is not allowed in this section
+        # [VTF.arch.UiName, arch]
+        # [OptionRom.DriverName]
+        self.__CurSection = []
+        Section = Section.strip()[1:-1].upper().replace(' ', '').strip('.')
+        ItemList = Section.split('.')
+        Item = ItemList[0]
+        if Item == '' or Item == 'RULE':
+            return
+
+        if Item == 'DEFINES':
+            self.__CurSection = ['COMMON', 'COMMON', 'COMMON']
+        elif Item == 'VTF' and len(ItemList) == 3:
+            UiName = ItemList[2]
+            Pos = UiName.find(',')
+            if Pos != -1:
+                UiName = UiName[:Pos]
+            self.__CurSection = ['VTF', UiName, ItemList[1]]
+        elif len(ItemList) > 1:
+            self.__CurSection = [ItemList[0], ItemList[1], 'COMMON']
+        elif len(ItemList) > 0:
+            self.__CurSection = [ItemList[0], 'DUMMY', 'COMMON']
+
     ## PreprocessFile() method
     #
     #   Preprocess file contents, replace comments with spaces.
@@ -530,10 +567,10 @@ class FdfParser:
                     raise Warning("expected include file name", self.FileName, self.CurrentLineNumber)
                 IncFileName = self.__Token
                 __IncludeMacros = {}
-                __IncludeMacros['WORKSPACE'] = InputMacroDict['WORKSPACE']
-                __IncludeMacros['ECP_SOURCE'] = InputMacroDict['ECP_SOURCE']
-                __IncludeMacros['EFI_SOURCE'] = InputMacroDict['EFI_SOURCE']
-                __IncludeMacros['EDK_SOURCE'] = InputMacroDict['EDK_SOURCE']
+                __IncludeMacros['WORKSPACE'] = self.__GetMacroValue('WORKSPACE')
+                __IncludeMacros['ECP_SOURCE'] = self.__GetMacroValue('ECP_SOURCE')
+                __IncludeMacros['EFI_SOURCE'] = self.__GetMacroValue('EFI_SOURCE')
+                __IncludeMacros['EDK_SOURCE'] = self.__GetMacroValue('EDK_SOURCE')
                 
                 IncludedFile = NormPath(ReplaceMacro(IncFileName, __IncludeMacros, RaiseError=True))
                 #
@@ -609,8 +646,47 @@ class FdfParser:
         IfList = []
         RegionLayoutLine = 0
         while self.__GetNextToken():
+            # Determine section name and the location dependent macro
+            if self.__GetIfListCurrentItemStat(IfList):
+                if self.__Token.startswith('['):
+                    Header = self.__Token
+                    if not self.__Token.endswith(']'):
+                        self.__SkipToToken(']')
+                        Header += self.__SkippedChars
+                    if Header.find('$(') != -1:
+                        raise Warning("macro cannot be used in section header", self.FileName, self.CurrentLineNumber)
+                    self.__SectionHeaderParser(Header)
+                    continue
+                # Replace macros except in RULE section or out of section
+                elif self.__CurSection and self.__Token.find('$(') != -1:
+                    CurIndex = self.CurrentOffsetWithinLine
+                    self.__UndoToken()
+                    PreIndex = self.CurrentOffsetWithinLine
+                    CurLine = self.Profile.FileLinesList[self.CurrentLineNumber - 1]
+                    MacroReplaced = False
+                    StartPos = CurLine.find('$(', PreIndex, CurIndex+1)
+                    EndPos = CurLine.find(')', StartPos+2, CurIndex+1)
+                    while StartPos != -1 and EndPos != -1:
+                        MacroName = CurLine[StartPos+2 : EndPos]
+                        MacorValue = self.__GetMacroValue(MacroName)
+                        if MacorValue != None:
+                            MacroReplaced = True
+                            CurLine = CurLine.replace('$(' + MacroName + ')', MacorValue, 1)
+                            PreIndex = StartPos + len(MacorValue)
+                            CurIndex = CurIndex - (len(MacroName) + 3 - len(MacorValue))
+                        else:
+                            PreIndex = EndPos + 1
+                        StartPos = CurLine.find('$(', PreIndex, CurIndex+1)
+                        EndPos = CurLine.find(')', StartPos+2, CurIndex+1)
+                    if not MacroReplaced:
+                        self.CurrentOffsetWithinLine = CurIndex
+                    self.Profile.FileLinesList[self.CurrentLineNumber - 1] = CurLine
+                    continue
+
             if self.__Token == 'DEFINE':
-                if self.__GetIfListCurrentItemStat(IfList): 
+                if self.__GetIfListCurrentItemStat(IfList):
+                    if not self.__CurSection:
+                        raise Warning("macro cannot be defined in Rule section or out of section", self.FileName, self.CurrentLineNumber)
                     DefineLine = self.CurrentLineNumber - 1
                     DefineOffset = self.CurrentOffsetWithinLine - len('DEFINE')
                     if not self.__GetNextToken():
@@ -625,13 +701,7 @@ class FdfParser:
                     if self.__GetStringData():
                         pass
                     Value = self.__Token
-                    if not Macro in InputMacroDict:
-                        FileLineTuple = GetRealFileLine(self.FileName, DefineLine + 1)
-                        MacProfile = MacroProfile(FileLineTuple[0], FileLineTuple[1])
-                        MacProfile.MacroName = Macro
-                        MacProfile.MacroValue = Value
-                        AllMacroList.append(MacProfile)
-                        InputMacroDict[MacProfile.MacroName] = MacProfile.MacroValue
+                    self.__SetMacroValue(Macro, Value)
                     self.__WipeOffArea.append(((DefineLine, DefineOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token == 'SET':
                 PcdPair = self.__GetNextPcdName()
@@ -649,7 +719,7 @@ class FdfParser:
                         raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
                     Value += self.__SkippedChars
 
-                InputMacroDict[PcdName] = Value
+                self.__PcdDict[PcdName] = Value
             elif self.__Token in ('!ifdef', '!ifndef', '!if'):
                 IfStartPos = (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - len(self.__Token))
                 IfList.append([IfStartPos, None, None])
@@ -709,19 +779,50 @@ class FdfParser:
                 if not RegionSizeGuid:
                     RegionLayoutLine = self.CurrentLineNumber + 1
                     continue
-                InputMacroDict[RegionSizeGuid.group('base')] = RegionSize.group('base')
-                InputMacroDict[RegionSizeGuid.group('size')] = RegionSize.group('size')
+                self.__PcdDict[RegionSizeGuid.group('base')] = RegionSize.group('base')
+                self.__PcdDict[RegionSizeGuid.group('size')] = RegionSize.group('size')
                 RegionLayoutLine = self.CurrentLineNumber + 1
 
         if IfList:
             raise Warning("Missing !endif", self.FileName, self.CurrentLineNumber)
         self.Rewind()
 
+    def __CollectMacroPcd(self):
+        MacroDict = {}
+
+        # PCD macro
+        MacroDict.update(self.__PcdDict)
+
+        # Lowest priority
+        MacroDict.update(GlobalData.gPlatformDefines)
+
+        if self.__CurSection:
+            # Defines macro
+            ScopeMacro = self.__MacroDict['COMMON', 'COMMON', 'COMMON']
+            if ScopeMacro:
+                MacroDict.update(ScopeMacro)
+    
+            # Section macro
+            ScopeMacro = self.__MacroDict[
+                        self.__CurSection[0],
+                        self.__CurSection[1],
+                        self.__CurSection[2]
+            ]
+            if ScopeMacro:
+                MacroDict.update(ScopeMacro)
+
+        MacroDict.update(GlobalData.gGlobalDefines)
+        MacroDict.update(GlobalData.gCommandLineDefines)
+        # Highest priority
+
+        return MacroDict
+
     def __EvaluateConditional(self, Expression, Line, Op = None, Value = None):
         FileLineTuple = GetRealFileLine(self.FileName, Line)
+        MacroPcdDict = self.__CollectMacroPcd()
         if Op == 'eval':
             try:
-                return ValueExpression(Expression, InputMacroDict)()
+                return ValueExpression(Expression, MacroPcdDict)()
             except SymbolNotFound:
                 return False
             except WrnExpression, Excpt:
@@ -738,7 +839,7 @@ class FdfParser:
         else:
             if Expression.startswith('$(') and Expression[-1] == ')':
                 Expression = Expression[2:-1]            
-            return Expression in InputMacroDict
+            return Expression in MacroPcdDict
 
     ## __IsToken() method
     #
@@ -1150,12 +1251,6 @@ class FdfParser:
 
         while self.__GetDefines():
             pass
-        
-        Index = 0
-        while Index < len(self.Profile.FileLinesList):
-            FileLineTuple = GetRealFileLine(self.FileName, Index + 1)
-            self.Profile.FileLinesList[Index] = self.__ReplaceMacros(self.Profile.FileLinesList[Index], FileLineTuple[0], FileLineTuple[1])
-            Index += 1
 
     ## ParseFile() method
     #
@@ -1239,11 +1334,6 @@ class FdfParser:
             if not self.__GetNextToken() or self.__Token.startswith('['):
                 raise Warning("expected MACRO value", self.FileName, self.CurrentLineNumber)
             Value = self.__Token
-            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
-            MacProfile = MacroProfile(FileLineTuple[0], FileLineTuple[1])
-            MacProfile.MacroName = Macro
-            MacProfile.MacroValue = Value
-            AllMacroList.append(MacProfile)
 
         return False
 
@@ -2420,7 +2510,7 @@ class FdfParser:
                     if ErrorCode != 0:
                         EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
                 else:
-                    if not InputMacroDict["OUTPUT_DIRECTORY"] in FfsFileObj.FileName:
+                    if not self.__GetMacroValue("OUTPUT_DIRECTORY") in FfsFileObj.FileName:
                         #do case sensitive check for file path
                         ErrorCode, ErrorInfo = PathClass(NormPath(FfsFileObj.FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
                         if ErrorCode != 0:
