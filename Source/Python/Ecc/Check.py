@@ -592,7 +592,7 @@ class Check(object):
             SqlCommand = """
                          select A.ID, A.Value1, A.BelongsToFile, A.StartLine, B.StartLine from Dsc as A left join Dsc as B
                          where A.Model = %s and B.Model = %s and A.Value3 = B.Value3 and A.Arch = B.Arch and A.ID <> B.ID
-                         and A.Value1 = B.Value1 and A.StartLine <> B.StartLine and B.BelongsToFile = A.BelongsToFile""" \
+                         and A.Value1 = B.Value1 and A.Value2 <> B.Value2 and A.StartLine <> B.StartLine and B.BelongsToFile = A.BelongsToFile""" \
                             % (MODEL_EFI_LIBRARY_CLASS, MODEL_EFI_LIBRARY_CLASS)
             RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
             for Record in RecordSet:
