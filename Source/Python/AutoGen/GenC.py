@@ -312,7 +312,7 @@ gAutoGenHPrologueString = TemplateString("""
 
 """)
 
-gAutoGenHCppPrologueString = """
+gAutoGenHCppPrologueString = """\
 #ifdef __cplusplus
 extern "C" {
 #endif
