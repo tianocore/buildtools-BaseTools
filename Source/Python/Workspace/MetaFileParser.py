@@ -1332,12 +1332,26 @@ class DscParser(MetaFileParser):
 
     def __ProcessPcd(self):
         ValueList = GetSplitValueList(self._ValueList[2])
+        #
+        # PCD value can be an expression
+        #
         if len(ValueList) > 1 and ValueList[1] == 'VOID*':
-            PcdValue = ValueList[0]
-            ValueList[0] = ReplaceMacro(PcdValue, self._Macros)
+            PcdValue = ValueList[0]      
+            try:
+                ValueList[0] = ValueExpression(PcdValue, self._Macros)(True)
+            except WrnExpression, Value:
+                ValueList[0] = Value.result          
         else:
             PcdValue = ValueList[-1]
-            ValueList[-1] = ReplaceMacro(PcdValue, self._Macros)
+            try:
+                ValueList[-1] = ValueExpression(PcdValue, self._Macros)(True)
+            except WrnExpression, Value:
+                ValueList[-1] = Value.result
+            
+            if ValueList[-1] == 'True':
+                ValueList[-1] = '1'
+            if ValueList[-1] == 'False':
+                ValueList[-1] = '0'      
 
         self._ValueList[2] = '|'.join(ValueList)
 

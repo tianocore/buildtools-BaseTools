@@ -971,9 +971,9 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
 
         if Pcd.DatumType == 'BOOLEAN':
             BoolValue = Value.upper()
-            if BoolValue == 'TRUE':
+            if BoolValue == 'TRUE' or BoolValue == '1':
                 Value = '1U'
-            elif BoolValue == 'FALSE':
+            elif BoolValue == 'FALSE' or BoolValue == '0':
                 Value = '0U'
 
         if Pcd.DatumType in ['UINT64', 'UINT32', 'UINT16', 'UINT8']:
