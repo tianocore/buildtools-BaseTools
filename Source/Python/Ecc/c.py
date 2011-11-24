@@ -2301,32 +2301,75 @@ def CheckFileHeaderDoxygenComments(FullFileName):
     FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, ID
                        from %s
-                       where Model = %d and (StartLine = 1 or StartLine = 7 or StartLine = 8) and StartColumn = 0
+                       where Model = %d and StartLine = 1 and StartColumn = 0
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     if len(ResultSet) == 0:
-        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'No Comment appear at the very beginning of file.', 'File', FileID)
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'No File License header appear at the very beginning of file.', 'File', FileID)
         return ErrorMsgList
 
-    IsFoundError1 = True
-    IsFoundError2 = True
-    IsFoundError3 = True
+    NoHeaderCommentStartFlag = True
+    NoHeaderCommentEndFlag = True
+    NoHeaderCommentPeriodFlag = True
+    NoCopyrightFlag = True
+    NoLicenseFlag = True
+    NoRevReferFlag = True
+    NextLineIndex = 0
     for Result in ResultSet:
         CommentStr = Result[0].strip()
+        CommentStrList = CommentStr.split('\r\n')
         ID = Result[1]
+        Index = 0
         if CommentStr.startswith('/** @file'):
-            IsFoundError1 = False
+            NoHeaderCommentStartFlag = False
+        else:
+            continue
         if CommentStr.endswith('**/'):
-            IsFoundError2 = False
-        if CommentStr.find('.') != -1:
-            IsFoundError3 = False
+            NoHeaderCommentEndFlag = False
+        else:
+            continue
 
-    if IsFoundError1:
+        for CommentLine in CommentStrList:
+            Index = Index + 1
+            NextLineIndex = Index
+            if CommentLine.startswith('/** @file'):
+                continue
+            if CommentLine.startswith('**/'):
+                break
+            if CommentLine.startswith('/** @file') == False and CommentLine.startswith('**/') == False and CommentLine.strip() and CommentLine.startswith('  ') == False:
+                PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment content should start with two spaces at each line', FileTable, ID)
+            
+            CommentLine = CommentLine.strip()
+            if CommentLine.startswith('Copyright'):
+                NoCopyrightFlag = False
+                if CommentLine.find('All rights reserved') == -1:
+                    PrintErrorMsg(ERROR_HEADER_CHECK_FILE, '""All rights reserved"" announcement should be following the ""Copyright"" at the same line', FileTable, ID)
+                if CommentLine.endswith('<BR>') == -1:
+                    PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'The ""<BR>"" at the end of the Copyright line is required', FileTable, ID)
+                if NextLineIndex < len(CommentStrList) and CommentStrList[NextLineIndex].strip().startswith('Copyright') == False and CommentStrList[NextLineIndex].strip():
+                    NoLicenseFlag = False
+            if CommentLine.startswith('@par Revision Reference:'):
+                NoRevReferFlag = False
+                RefListFlag = False
+                for RefLine in CommentStrList[NextLineIndex:]:
+                    if RefLine.strip() and (NextLineIndex + 1) < len(CommentStrList) and CommentStrList[NextLineIndex+1].strip() and CommentStrList[NextLineIndex+1].strip().startswith('**/') == False:
+                        RefListFlag = True
+                    if RefLine.strip() == False or RefLine.strip().startswith('**/'):
+                        RefListFlag = False
+                        break
+                    if RefListFlag == True:
+                        if RefLine.strip() and RefLine.strip().startswith('**/') == False and RefLine.startswith('  -') == False:
+                            PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'Each reference on a separate line should begin with a bullet character ""-"" ', FileTable, ID)                    
+    if NoHeaderCommentStartFlag:
         PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, ID)
-    if IsFoundError2:
+        return
+    if NoHeaderCommentEndFlag:
         PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with ""**/""', FileTable, ID)
-    if IsFoundError3:
-        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period "".""', FileTable, ID)
+        return
+    if NoCopyrightFlag:
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment missing the ""Copyright""', FileTable, ID)
+    if NoLicenseFlag:
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should have the License immediately after the ""Copyright"" line', FileTable, ID)
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
     ErrorMsgList = []

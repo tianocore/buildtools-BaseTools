@@ -15,6 +15,7 @@ import re
 from CommonDataClass.DataClass import *
 from Common.DataType import SUP_MODULE_LIST_STRING, TAB_VALUE_SPLIT
 from EccToolError import *
+from MetaDataParser import ParseHeaderCommentSection
 import EccGlobalData
 import c
 
@@ -415,13 +416,79 @@ class Check(object):
                     elif Ext in ('.inf', '.dec', '.dsc', '.fdf'):
                         FullName = os.path.join(Dirpath, F)
                         op = open(FullName).readlines()
-                        if not op[0].startswith('## @file') and op[6].startswith('## @file') and op[7].startswith('## @file'):
+                        FileLinesList = op
+                        LineNo             = 0
+                        CurrentSection     = MODEL_UNKNOWN 
+                        HeaderSectionLines       = []
+                        HeaderCommentStart = False 
+                        HeaderCommentEnd   = False
+                        
+                        for Line in FileLinesList:
+                            LineNo   = LineNo + 1
+                            Line     = Line.strip()
+                            if (LineNo < len(FileLinesList) - 1):
+                                NextLine = FileLinesList[LineNo].strip()
+            
+                            #
+                            # blank line
+                            #
+                            if (Line == '' or not Line) and LineNo == len(FileLinesList):
+                                LastSectionFalg = True
+
+                            #
+                            # check whether file header comment section started
+                            #
+                            if Line.startswith('##') and \
+                                (Line.find('@file') > -1) and \
+                                not HeaderCommentStart:
+                                if CurrentSection != MODEL_UNKNOWN:
+                                    SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
+                                    ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
+                                    for Result in ResultSet:
+                                        Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" at the very top file'
+                                        EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
+
+                                else:
+                                    CurrentSection = MODEL_IDENTIFIER_FILE_HEADER
+                                    #
+                                    # Append the first line to section lines.
+                                    #
+                                    HeaderSectionLines.append((Line, LineNo))
+                                    HeaderCommentStart = True
+                                    continue        
+            
+                            #
+                            # Collect Header content.
+                            #
+                            if (Line.startswith('#') and CurrentSection == MODEL_IDENTIFIER_FILE_HEADER) and\
+                                HeaderCommentStart and not Line.startswith('##') and not\
+                                HeaderCommentEnd and NextLine != '':
+                                HeaderSectionLines.append((Line, LineNo))
+                                continue
+                            #
+                            # Header content end
+                            #
+                            if (Line.startswith('##') or not Line.strip().startswith("#")) and HeaderCommentStart \
+                                and not HeaderCommentEnd:
+                                if Line.startswith('##'):
+                                    HeaderCommentEnd = True
+                                HeaderSectionLines.append((Line, LineNo))
+                                ParseHeaderCommentSection(HeaderSectionLines, FullName)
+                                break
+                        if HeaderCommentStart == False:
                             SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
                             ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
                             for Result in ResultSet:
-                                Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file""'
+                                Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" at the very top file'
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
+                        if HeaderCommentEnd == False:
+                            SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
+                            ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
+                            for Result in ResultSet:
+                                Msg = 'INF/DEC/DSC/FDF file header comment should end with ""##"" at the end of file header comment block'
                                 EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
 
+                                     
 
     # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
     def DoxygenCheckFunctionHeader(self):
