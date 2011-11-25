@@ -1153,27 +1153,13 @@ class DscParser(MetaFileParser):
         Records = self._RawTable.Query(MODEL_PCD_FEATURE_FLAG, BelongsToItem=-1.0)
         for TokenSpaceGuid,PcdName,Value,Dummy2,Dummy3,ID,Line in Records:
             Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
-            # Only use PCD whose value is straitforward (no macro and PCD)
-            if self.SymbolPattern.findall(Value):
-                continue
             Name = TokenSpaceGuid + '.' + PcdName
-            # Don't use PCD with different values.
-            if Name in self._Symbols and self._Symbols[Name] != Value:
-                self._Symbols.pop(Name)
-                continue 
             self._Symbols[Name] = Value
 
         Records = self._RawTable.Query(MODEL_PCD_FIXED_AT_BUILD, BelongsToItem=-1.0)
         for TokenSpaceGuid,PcdName,Value,Dummy2,Dummy3,ID,Line in Records:
             Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
-            # Only use PCD whose value is straitforward (no macro and PCD)
-            if self.SymbolPattern.findall(Value):
-                continue 
-            Name = TokenSpaceGuid+'.'+PcdName
-            # Don't use PCD with different values.
-            if Name in self._Symbols and self._Symbols[Name] != Value:
-                self._Symbols.pop(Name)
-                continue 
+            Name = TokenSpaceGuid + '.' + PcdName
             self._Symbols[Name] = Value
 
     def __ProcessDefine(self):
