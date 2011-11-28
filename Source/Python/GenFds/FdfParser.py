@@ -645,6 +645,7 @@ class FdfParser:
         # IfList is a stack of if branches with elements of list [Pos, CondSatisfied, BranchDetermined]
         IfList = []
         RegionLayoutLine = 0
+        ReplacedLine = -1
         while self.__GetNextToken():
             # Determine section name and the location dependent macro
             if self.__GetIfListCurrentItemStat(IfList):
@@ -658,28 +659,26 @@ class FdfParser:
                     self.__SectionHeaderParser(Header)
                     continue
                 # Replace macros except in RULE section or out of section
-                elif self.__CurSection and self.__Token.find('$(') != -1:
-                    CurIndex = self.CurrentOffsetWithinLine
+                elif self.__CurSection and ReplacedLine != self.CurrentLineNumber:
                     self.__UndoToken()
-                    PreIndex = self.CurrentOffsetWithinLine
+                    ReplacedLine = self.CurrentLineNumber
                     CurLine = self.Profile.FileLinesList[self.CurrentLineNumber - 1]
-                    MacroReplaced = False
-                    StartPos = CurLine.find('$(', PreIndex, CurIndex+1)
-                    EndPos = CurLine.find(')', StartPos+2, CurIndex+1)
+                    PreIndex = 0
+                    StartPos = CurLine.find('$(', PreIndex)
+                    EndPos = CurLine.find(')', StartPos+2)
                     while StartPos != -1 and EndPos != -1:
                         MacroName = CurLine[StartPos+2 : EndPos]
                         MacorValue = self.__GetMacroValue(MacroName)
                         if MacorValue != None:
-                            MacroReplaced = True
                             CurLine = CurLine.replace('$(' + MacroName + ')', MacorValue, 1)
-                            PreIndex = StartPos + len(MacorValue)
-                            CurIndex = CurIndex - (len(MacroName) + 3 - len(MacorValue))
+                            if MacorValue.find('$(') != -1:
+                                PreIndex = StartPos
+                            else:
+                                PreIndex = StartPos + len(MacorValue)
                         else:
                             PreIndex = EndPos + 1
-                        StartPos = CurLine.find('$(', PreIndex, CurIndex+1)
-                        EndPos = CurLine.find(')', StartPos+2, CurIndex+1)
-                    if not MacroReplaced:
-                        self.CurrentOffsetWithinLine = CurIndex
+                        StartPos = CurLine.find('$(', PreIndex)
+                        EndPos = CurLine.find(')', StartPos+2)
                     self.Profile.FileLinesList[self.CurrentLineNumber - 1] = CurLine
                     continue
 
@@ -704,15 +703,8 @@ class FdfParser:
                 if not self.__IsToken( "="):
                     raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
 
-                if not self.__GetNextToken():
-                    raise Warning("expected value", self.FileName, self.CurrentLineNumber)
-
-                Value = self.__Token
-                if Value.startswith("{"):
-                    # deal with value with {}
-                    if not self.__SkipToToken( "}"):
-                        raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
-                    Value += self.__SkippedChars
+                Value = self.__GetExpression()
+                Value = self.__EvaluateConditional(Value, self.CurrentLineNumber, 'eval', True)
 
                 self.__PcdDict[PcdName] = Value
             elif self.__Token in ('!ifdef', '!ifndef', '!if'):
@@ -819,7 +811,10 @@ class FdfParser:
         MacroPcdDict = self.__CollectMacroPcd()
         if Op == 'eval':
             try:
-                return ValueExpression(Expression, MacroPcdDict)()
+                if Value:
+                    return ValueExpression(Expression, MacroPcdDict)(True)
+                else:
+                    return ValueExpression(Expression, MacroPcdDict)()
             except WrnExpression, Excpt:
                 # 
                 # Catch expression evaluation warning here. We need to report
@@ -1652,15 +1647,8 @@ class FdfParser:
             if not self.__IsToken( "="):
                 raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
 
-            if not self.__GetNextToken():
-                raise Warning("expected value", self.FileName, self.CurrentLineNumber)
-
-            Value = self.__Token
-            if Value.startswith("{"):
-                # deal with value with {}
-                if not self.__SkipToToken( "}"):
-                    raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
-                Value += self.__SkippedChars
+            Value = self.__GetExpression()
+            Value = self.__EvaluateConditional(Value, self.CurrentLineNumber, 'eval', True)
 
             if Obj:
                 Obj.SetVarDict[PcdPair] = Value
