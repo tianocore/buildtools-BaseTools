@@ -960,8 +960,7 @@ class PlatformAutoGen(AutoGen):
                                 "Fail to get FLASH_DEFINITION definition in DSC file %s which is required when DSC contains VPD PCD." % str(self.Platform.MetaFile))
             
             if VpdFile.GetCount() != 0:
-                WorkspaceDb = self.BuildDatabase.WorkspaceDb
-                DscTimeStamp = WorkspaceDb.GetTimeStamp(WorkspaceDb.GetFileId(str(self.Platform.MetaFile)))
+                DscTimeStamp = self.Platform.MetaFile.TimeStamp
                 FvPath = os.path.join(self.BuildDir, "FV")
                 if not os.path.exists(FvPath):
                     try:

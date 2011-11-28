@@ -1321,6 +1321,7 @@ class DscParser(MetaFileParser):
         self._ValueList[1] = ReplaceMacro(self._ValueList[1], self._Macros, RaiseError=True)
 
     def __ProcessPcd(self):
+        PcdValue = None
         ValueList = GetSplitValueList(self._ValueList[2])
         #
         # PCD value can be an expression
@@ -1332,16 +1333,31 @@ class DscParser(MetaFileParser):
             except WrnExpression, Value:
                 ValueList[0] = Value.result          
         else:
-            PcdValue = ValueList[-1]
-            try:
-                ValueList[-1] = ValueExpression(PcdValue, self._Macros)(True)
-            except WrnExpression, Value:
-                ValueList[-1] = Value.result
-            
-            if ValueList[-1] == 'True':
-                ValueList[-1] = '1'
-            if ValueList[-1] == 'False':
-                ValueList[-1] = '0'      
+            #
+            # Int*/Boolean VPD PCD
+            # TokenSpace | PcdCName | Offset | [Value]
+            # 
+            # VOID* VPD PCD
+            # TokenSpace | PcdCName | Offset | [Size] | [Value]
+            #
+            if self._ItemType == MODEL_PCD_DYNAMIC_VPD:
+                if len(ValueList) >= 4:
+                    PcdValue = ValueList[-1]
+            else:
+                PcdValue = ValueList[-1]
+            #
+            # For the VPD PCD, there may not have PcdValue data in DSC file
+            #
+            if PcdValue:
+                try:
+                    ValueList[-1] = ValueExpression(PcdValue, self._Macros)(True)
+                except WrnExpression, Value:
+                    ValueList[-1] = Value.result
+                
+                if ValueList[-1] == 'True':
+                    ValueList[-1] = '1'
+                if ValueList[-1] == 'False':
+                    ValueList[-1] = '0'      
 
         self._ValueList[2] = '|'.join(ValueList)
 
