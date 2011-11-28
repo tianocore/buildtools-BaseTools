@@ -60,7 +60,10 @@ def ParseMacro(Parser):
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
         Value = ReplaceMacro(Value, self._Macros)
-        self._ItemType = MODEL_META_DATA_DEFINE
+        if Type in self.DataType:
+            self._ItemType = self.DataType[Type]
+        else:
+            self._ItemType = MODEL_META_DATA_DEFINE
         # DEFINE defined macros
         if Type == TAB_DSC_DEFINES_DEFINE:
             if type(self) == DecParser:
