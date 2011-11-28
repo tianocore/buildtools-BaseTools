@@ -933,6 +933,7 @@ class DscParser(MetaFileParser):
         self._ValueList[0:len(TokenList)] = TokenList
 
     ## Parse Edk style of library modules
+    @ParseMacro
     def _LibraryInstanceParser(self):
         self._ValueList[0] = self._CurrentLine
 
