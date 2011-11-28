@@ -695,12 +695,7 @@ class FdfParser:
                     if not self.__IsToken( "="):
                         raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
     
-                    if not self.__GetNextToken():
-                        raise Warning("expected value", self.FileName, self.CurrentLineNumber)
-    
-                    if self.__GetStringData():
-                        pass
-                    Value = self.__Token
+                    Value = self.__GetExpression()
                     self.__SetMacroValue(Macro, Value)
                     self.__WipeOffArea.append(((DefineLine, DefineOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token == 'SET':
@@ -761,6 +756,8 @@ class FdfParser:
                             IfList[-1][2] = True
                             self.__WipeOffArea.append((IfList[-1][0], (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token == '!endif':
+                if len(IfList) <= 0:
+                    raise Warning("Missing !if statement", self.FileName, self.CurrentLineNumber)
                 if IfList[-1][1]:
                     self.__WipeOffArea.append(((self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - len('!endif')), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
                 else:
@@ -823,8 +820,6 @@ class FdfParser:
         if Op == 'eval':
             try:
                 return ValueExpression(Expression, MacroPcdDict)()
-            except SymbolNotFound:
-                return False
             except WrnExpression, Excpt:
                 # 
                 # Catch expression evaluation warning here. We need to report
@@ -1047,7 +1042,7 @@ class FdfParser:
             # That is, when we got a space or any char in the tuple, we got the end of token.
             if not str(TempChar).isspace() and not TempChar in SEPERATOR_TUPLE:
                 if not self.__UndoOneChar():
-                    break
+                    return
             # if we happen to meet a seperator as the first char, we must proceed to get it.
             # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
             elif StartPos == self.CurrentOffsetWithinLine and TempChar in SEPERATOR_TUPLE:
