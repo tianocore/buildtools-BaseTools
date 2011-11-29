@@ -1359,6 +1359,8 @@ class FdfParser:
         if FdName == "":
             if len (self.Profile.FdDict) == 0:
                 FdName = GenFdsGlobalVariable.PlatformName
+                if FdName == "":
+                    FdName = GlobalData.gPlatformName
                 self.Profile.FdNameNotSet = True
             else:
                 raise Warning("expected FdName in [FD.] section", self.FileName, self.CurrentLineNumber)

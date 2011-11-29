@@ -26,6 +26,7 @@ gAllFiles = None
 
 gGlobalDefines = {}
 gPlatformDefines = {}
+gPlatformName = ''
 gCommandLineDefines = {}
 gEdkGlobal = {}
 gOverrideDir = {}
