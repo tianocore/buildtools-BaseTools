@@ -1001,7 +1001,7 @@ class PlatformAutoGen(AutoGen):
                             # just pick the a value to determine whether is unicode string type
                             Sku = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]                        
                             if Sku.VpdOffset == "*":
-                                Sku.VpdOffset = VpdFile.GetOffset(Pcd)[0]
+                                Sku.VpdOffset = VpdFile.GetOffset(Pcd)[0].strip()
                     else:
                         EdkLogger.error("build", FILE_READ_FAILURE, "Can not find VPD map file %s to fix up VPD offset." % VpdMapFilePath)
             
