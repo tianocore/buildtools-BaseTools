@@ -133,7 +133,7 @@ class ValueExpression(object):
     @staticmethod
     def Eval(Operator, Oprand1, Oprand2 = None):
         WrnExp = None
-        
+
         if Operator not in ["==", "!=", ">=", "<=", ">", "<", "in", "not in"] and \
             (type(Oprand1) == type('') or type(Oprand2) == type('')):
             raise BadExpression(ERR_STRING_EXPR % Operator)
@@ -166,13 +166,13 @@ class ValueExpression(object):
                     raise WrnExp
                 else:
                     raise BadExpression(ERR_RELCMP_STR_OTHERS % Operator)
-            elif TypeDict[type(Oprand1)] != TypeDict[type(Oprand2)]: 
+            elif TypeDict[type(Oprand1)] != TypeDict[type(Oprand2)]:
                 if Operator in ["==", "!=", ">=", "<=", ">", "<"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
                     # comparison between number and boolean is allowed
                     pass
                 elif Operator in ['&', '|', '^', "and", "or"] and set((TypeDict[type(Oprand1)], TypeDict[type(Oprand2)])) == set((TypeDict[type(True)], TypeDict[type(0)])):
                     # bitwise and logical operation between number and boolean is allowed
-                    pass                
+                    pass
                 else:
                     raise BadExpression(ERR_EXPR_TYPE)
             if type(Oprand1) == type('') and type(Oprand2) == type(''):
@@ -242,6 +242,19 @@ class ValueExpression(object):
         if self._NoProcess:
             return self._Expr
 
+        self._Expr = self._Expr.strip()
+        if RealValue:
+            self._Token = self._Expr
+            if self.__IsNumberToken():
+                return self._Expr
+
+            Token = self._GetToken()
+            if type(Token) == type('') and Token.startswith('{') and Token.endswith('}') and self._Idx >= self._Len:
+                return self._Expr
+
+            self._Idx = 0
+            self._Token = ''
+
         Val = self._OrExpr()
         RealVal = Val
         if type(Val) == type(''):
@@ -265,7 +278,7 @@ class ValueExpression(object):
             RetVal = True
         else:
             RetVal = False
-        
+
         if self._WarnExcept:
             self._WarnExcept.result = RetVal
             raise self._WarnExcept
@@ -496,7 +509,7 @@ class ValueExpression(object):
             if not Token:
                 self._LiteralToken = '0x0'
             else:
-                self._LiteralToken = '0x' + Token
+                self._LiteralToken = '0x' + Token.lower()
             return True
         return False
 
@@ -600,6 +613,3 @@ if __name__ == '__main__':
             print str(Ex)
         except Exception, Ex:
             print str(Ex)
-        
-
-
