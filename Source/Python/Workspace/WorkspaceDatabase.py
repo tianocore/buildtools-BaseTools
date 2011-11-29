@@ -429,7 +429,7 @@ class DscBuildData(PlatformBuildClassObject):
                                     File=self.MetaFile, Line=Record[-1])
                 self._SkuIds[Record[1]] = Record[0]
             if 'DEFAULT' not in self._SkuIds:
-                self._SkuIds['DEFAULT'] = 0
+                self._SkuIds['DEFAULT'] = '0'
         return self._SkuIds
 
     ## Retrieve [Components] section information
