@@ -1242,18 +1242,43 @@ class PlatformAutoGen(AutoGen):
         if self._PcdTokenNumber == None:
             self._PcdTokenNumber = sdict()
             TokenNumber = 1
+            #
+            # Make the Dynamic and DynamicEx PCD use within different TokenNumber area. 
+            # Such as:
+            # 
+            # Dynamic PCD:
+            # TokenNumber 0 ~ 10
+            # DynamicEx PCD:
+            # TokeNumber 11 ~ 20
+            #
             for Pcd in self.DynamicPcdList:
                 if Pcd.Phase == "PEI":
-                    EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
-                    self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
-                    TokenNumber += 1
-
+                    if Pcd.Type in ["Dynamic", "DynamicDefault", "DynamicVpd", "DynamicHii"]:
+                        EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                        self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                        TokenNumber += 1
+                        
+            for Pcd in self.DynamicPcdList:
+                if Pcd.Phase == "PEI":
+                    if Pcd.Type in ["DynamicEx", "DynamicExDefault", "DynamicExVpd", "DynamicExHii"]:
+                        EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                        self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                        TokenNumber += 1
+                        
             for Pcd in self.DynamicPcdList:
                 if Pcd.Phase == "DXE":
-                    EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
-                    self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
-                    TokenNumber += 1
-
+                    if Pcd.Type in ["Dynamic", "DynamicDefault", "DynamicVpd", "DynamicHii"]:
+                        EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                        self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                        TokenNumber += 1
+                        
+            for Pcd in self.DynamicPcdList:
+                if Pcd.Phase == "DXE":
+                    if Pcd.Type in ["DynamicEx", "DynamicExDefault", "DynamicExVpd", "DynamicExHii"]:
+                        EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                        self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                        TokenNumber += 1
+                        
             for Pcd in self.NonDynamicPcdList:
                 self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                 TokenNumber += 1

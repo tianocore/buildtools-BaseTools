@@ -1505,6 +1505,17 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
         Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid
         Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
+        
+        Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
+        #
+        # Update VARDEF_HEADER
+        #
+        if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
+            Dict['VARDEF_HEADER'][GeneratedTokenNumber] = '_Variable_Header'
+        else:
+            Dict['VARDEF_HEADER'][GeneratedTokenNumber] = ''
+        
+        
         if Pcd.Type in gDynamicExPcd:
             Dict['EXMAPPING_TABLE_EXTOKEN'].append(str(Pcd.TokenValue) + 'U')
             if Phase == 'DXE':
