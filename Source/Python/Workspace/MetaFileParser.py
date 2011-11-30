@@ -1250,8 +1250,9 @@ class DscParser(MetaFileParser):
             self._DirectiveEvalStack[-1] = not self._DirectiveEvalStack[-1]
             self._DirectiveEvalStack.append(bool(Result))
         elif self._ItemType == MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE:
-            self._DirectiveStack[-1] = self._ItemType
+            self._DirectiveStack.append(self._ItemType)
             self._DirectiveEvalStack[-1] = not self._DirectiveEvalStack[-1]
+            self._DirectiveEvalStack.append(True)
         elif self._ItemType == MODEL_META_DATA_CONDITIONAL_STATEMENT_ENDIF:
             # Back to the nearest !if/!ifdef/!ifndef
             while self._DirectiveStack:
@@ -1259,7 +1260,6 @@ class DscParser(MetaFileParser):
                 Directive = self._DirectiveStack.pop()
                 if Directive in [MODEL_META_DATA_CONDITIONAL_STATEMENT_IF,
                                  MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF,
-                                 MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE,
                                  MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF]:
                     break
         elif self._ItemType == MODEL_META_DATA_INCLUDE:
