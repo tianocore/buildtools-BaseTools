@@ -2301,7 +2301,7 @@ def CheckFileHeaderDoxygenComments(FullFileName):
     FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, ID
                        from %s
-                       where Model = %d and StartLine = 1 and StartColumn = 0
+                       where Model = %d and (StartLine = 1 or StartLine = 7 or StartLine = 8) and StartColumn = 0
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     if len(ResultSet) == 0:
@@ -2316,15 +2316,27 @@ def CheckFileHeaderDoxygenComments(FullFileName):
     NoRevReferFlag = True
     NextLineIndex = 0
     for Result in ResultSet:
+        FileStartFlag = False
+        CommentStrList = []
         CommentStr = Result[0].strip()
-        CommentStrList = CommentStr.split('\r\n')
+        CommentStrListTemp = CommentStr.split('\n')
+        if (len(CommentStrListTemp) <= 1):
+            # For Mac
+            CommentStrListTemp = CommentStr.split('\r')
+        # Skip the content before the file  header    
+        for CommentLine in CommentStrListTemp:
+            if CommentLine.strip().startswith('/** @file'):
+                FileStartFlag = True
+            if FileStartFlag ==  True:
+                CommentStrList.append(CommentLine)
+                       
         ID = Result[1]
         Index = 0
-        if CommentStr.startswith('/** @file'):
+        if CommentStrList and CommentStrList[0].strip().startswith('/** @file'):
             NoHeaderCommentStartFlag = False
         else:
             continue
-        if CommentStr.endswith('**/'):
+        if CommentStrList and CommentStrList[-1].strip().endswith('**/'):
             NoHeaderCommentEndFlag = False
         else:
             continue
@@ -2336,8 +2348,10 @@ def CheckFileHeaderDoxygenComments(FullFileName):
                 continue
             if CommentLine.startswith('**/'):
                 break
-            if CommentLine.startswith('/** @file') == False and CommentLine.startswith('**/') == False and CommentLine.strip() and CommentLine.startswith('  ') == False:
-                PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment content should start with two spaces at each line', FileTable, ID)
+            # Check whether C File header Comment content start with two spaces.
+            if EccGlobalData.gConfig.HeaderCheckCFileCommentStartSpacesNum == '1' or EccGlobalData.gConfig.HeaderCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+                if CommentLine.startswith('/** @file') == False and CommentLine.startswith('**/') == False and CommentLine.strip() and CommentLine.startswith('  ') == False:
+                    PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment content should start with two spaces at each line', FileTable, ID)
             
             CommentLine = CommentLine.strip()
             if CommentLine.startswith('Copyright'):
@@ -2357,9 +2371,12 @@ def CheckFileHeaderDoxygenComments(FullFileName):
                     if RefLine.strip() == False or RefLine.strip().startswith('**/'):
                         RefListFlag = False
                         break
-                    if RefListFlag == True:
-                        if RefLine.strip() and RefLine.strip().startswith('**/') == False and RefLine.startswith('  -') == False:
-                            PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'Each reference on a separate line should begin with a bullet character ""-"" ', FileTable, ID)                    
+                    # Check whether C File header Comment's each reference at list should begin with a bullet character.
+                    if EccGlobalData.gConfig.HeaderCheckCFileCommentReferenceFormat == '1' or EccGlobalData.gConfig.HeaderCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+                        if RefListFlag == True:
+                            if RefLine.strip() and RefLine.strip().startswith('**/') == False and RefLine.startswith('  -') == False:                            
+                                PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'Each reference on a separate line should begin with a bullet character ""-"" ', FileTable, ID)                    
+    
     if NoHeaderCommentStartFlag:
         PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, ID)
         return
@@ -2368,8 +2385,10 @@ def CheckFileHeaderDoxygenComments(FullFileName):
         return
     if NoCopyrightFlag:
         PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment missing the ""Copyright""', FileTable, ID)
-    if NoLicenseFlag:
-        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should have the License immediately after the ""Copyright"" line', FileTable, ID)
+    #Check whether C File header Comment have the License immediately after the ""Copyright"" line.
+    if EccGlobalData.gConfig.HeaderCheckCFileCommentLicenseFormat == '1' or EccGlobalData.gConfig.HeaderCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+        if NoLicenseFlag:
+            PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should have the License immediately after the ""Copyright"" line', FileTable, ID)
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
     ErrorMsgList = []

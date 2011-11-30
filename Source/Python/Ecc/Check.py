@@ -486,7 +486,9 @@ class Check(object):
                             ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
                             for Result in ResultSet:
                                 Msg = 'INF/DEC/DSC/FDF file header comment should end with ""##"" at the end of file header comment block'
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
+                                # Check whether File header Comment End with '##'
+                                if EccGlobalData.gConfig.HeaderCheckFileCommentEnd == '1' or EccGlobalData.gConfig.HeaderCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+                                    EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
 
                                      
 
