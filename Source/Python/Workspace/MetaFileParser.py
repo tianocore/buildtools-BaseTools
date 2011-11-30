@@ -66,20 +66,27 @@ def ParseMacro(Parser):
             self._ItemType = MODEL_META_DATA_DEFINE
         # DEFINE defined macros
         if Type == TAB_DSC_DEFINES_DEFINE:
-            if type(self) == DecParser:
-                if MODEL_META_DATA_HEADER in self._SectionType:
+            #
+            # First judge whether this DEFINE is in conditional directive statements or not.
+            #
+            if type(self) == DscParser and self._InDirective > -1:
+                pass
+            else:
+                if type(self) == DecParser:
+                    if MODEL_META_DATA_HEADER in self._SectionType:
+                        self._FileLocalMacros[Name] = Value
+                    else:
+                        for Scope in self._Scope:
+                            self._SectionsMacroDict.setdefault((Scope[2], Scope[0], Scope[1]), {})[Name] = Value
+                elif self._SectionType == MODEL_META_DATA_HEADER:
                     self._FileLocalMacros[Name] = Value
                 else:
-                    for Scope in self._Scope:
-                        self._SectionsMacroDict.setdefault((Scope[2], Scope[0], Scope[1]), {})[Name] = Value
-            elif self._SectionType == MODEL_META_DATA_HEADER:
-                self._FileLocalMacros[Name] = Value
-            else:
-                SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
-                if SectionDictKey not in self._SectionsMacroDict:
-                    self._SectionsMacroDict[SectionDictKey] = {}
-                SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
-                SectionLocalMacros[Name] = Value
+                    SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
+                    if SectionDictKey not in self._SectionsMacroDict:
+                        self._SectionsMacroDict[SectionDictKey] = {}
+                    SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
+                    SectionLocalMacros[Name] = Value
+            
         # EDK_GLOBAL defined macros
         elif type(self) != DscParser:
             EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL can only be used in .dsc file",
@@ -743,7 +750,12 @@ class DscParser(MetaFileParser):
         self._DirectiveStack = []
         self._DirectiveEvalStack = []
         self._Enabled = 1
-
+        
+        #
+        # Specify whether current line is in uncertain condition
+        #
+        self._InDirective = -1
+        
         # Final valid replacable symbols
         self._Symbols = {}
         #
@@ -848,6 +860,13 @@ class DscParser(MetaFileParser):
         if DirectiveName not in self.DataType:
             EdkLogger.error("Parser", FORMAT_INVALID, "Unknown directive [%s]" % DirectiveName,
                             File=self.MetaFile, Line=self._LineIndex+1)
+
+        if DirectiveName in ['!IF', '!IFDEF', '!IFNDEF']:
+            self._InDirective += 1
+
+        if DirectiveName in ['!ENDIF']:
+            self._InDirective -= 1
+
         if DirectiveName in ['!IF', '!IFDEF', '!INCLUDE', '!IFNDEF', '!ELSEIF'] and self._ValueList[1] == '':
             EdkLogger.error("Parser", FORMAT_INVALID, "Missing expression",
                             File=self.MetaFile, Line=self._LineIndex+1,
