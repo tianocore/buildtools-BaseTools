@@ -567,12 +567,17 @@ class FdfParser:
                     raise Warning("expected include file name", self.FileName, self.CurrentLineNumber)
                 IncFileName = self.__Token
                 __IncludeMacros = {}
-                __IncludeMacros['WORKSPACE'] = self.__GetMacroValue('WORKSPACE')
-                __IncludeMacros['ECP_SOURCE'] = self.__GetMacroValue('ECP_SOURCE')
-                __IncludeMacros['EFI_SOURCE'] = self.__GetMacroValue('EFI_SOURCE')
-                __IncludeMacros['EDK_SOURCE'] = self.__GetMacroValue('EDK_SOURCE')
-                
-                IncludedFile = NormPath(ReplaceMacro(IncFileName, __IncludeMacros, RaiseError=True))
+                for Macro in ['WORKSPACE', 'ECP_SOURCE', 'EFI_SOURCE', 'EDK_SOURCE']:
+                    MacroVal = self.__GetMacroValue(Macro)
+                    if MacroVal:
+                        __IncludeMacros[Macro] = MacroVal
+
+                try:
+                    IncludedFile = NormPath(ReplaceMacro(IncFileName, __IncludeMacros, RaiseError=True))
+                except:
+                    raise Warning("only these system environment variables are permitted to start the path of the included file: "
+                                  "$(WORKSPACE), $(ECP_SOURCE), $(EFI_SOURCE), $(EDK_SOURCE)",
+                                  self.FileName, self.CurrentLineNumber)
                 #
                 # First search the include file under the same directory as FDF file
                 #
@@ -582,7 +587,12 @@ class FdfParser:
                     #
                     # Then search the include file under the same directory as DSC file
                     #
-                    IncludedFile1 = PathClass(IncludedFile, GenFdsGlobalVariable.ActivePlatform.Dir)
+                    PlatformDir = ''
+                    if GenFdsGlobalVariable.ActivePlatform:
+                        PlatformDir = GenFdsGlobalVariable.ActivePlatform.Dir
+                    elif GlobalData.gActivePlatform:
+                        PlatformDir = GlobalData.gActivePlatform.MetaFile.Dir
+                    IncludedFile1 = PathClass(IncludedFile, PlatformDir)
                     ErrorCode = IncludedFile1.Validate()[0]
                     if ErrorCode != 0:
                         #
@@ -591,7 +601,7 @@ class FdfParser:
                         IncludedFile1 = PathClass(IncludedFile, GlobalData.gWorkspace)
                         ErrorCode = IncludedFile1.Validate()[0]
                         if ErrorCode != 0:
-                            raise Warning("The include file does not exist under below directories: \n%s\n%s\n%s\n"%(os.path.dirname(self.FileName), GenFdsGlobalVariable.ActivePlatform.Dir, GlobalData.gWorkspace), 
+                            raise Warning("The include file does not exist under below directories: \n%s\n%s\n%s\n"%(os.path.dirname(self.FileName), PlatformDir, GlobalData.gWorkspace), 
                                           self.FileName, self.CurrentLineNumber)
 
                 IncFileProfile = IncludeFileProfile(IncludedFile1.Path)
@@ -660,9 +670,9 @@ class FdfParser:
                     continue
                 # Replace macros except in RULE section or out of section
                 elif self.__CurSection and ReplacedLine != self.CurrentLineNumber:
-                    self.__UndoToken()
                     ReplacedLine = self.CurrentLineNumber
-                    CurLine = self.Profile.FileLinesList[self.CurrentLineNumber - 1]
+                    self.__UndoToken()
+                    CurLine = self.Profile.FileLinesList[ReplacedLine - 1]
                     PreIndex = 0
                     StartPos = CurLine.find('$(', PreIndex)
                     EndPos = CurLine.find(')', StartPos+2)
@@ -679,7 +689,7 @@ class FdfParser:
                             PreIndex = EndPos + 1
                         StartPos = CurLine.find('$(', PreIndex)
                         EndPos = CurLine.find(')', StartPos+2)
-                    self.Profile.FileLinesList[self.CurrentLineNumber - 1] = CurLine
+                    self.Profile.FileLinesList[ReplacedLine - 1] = CurLine
                     continue
 
             if self.__Token == 'DEFINE':
@@ -947,7 +957,7 @@ class FdfParser:
         # Record the token start position, the position of the first non-space char.
         StartPos = self.CurrentOffsetWithinLine
         StartLine = self.CurrentLineNumber
-        while not self.__EndOfLine():
+        while StartLine == self.CurrentLineNumber:
             TempChar = self.__CurrentChar()
             # Try to find the end char that is not a space and not in seperator tuple.
             # That is, when we got a space or any char in the tuple, we got the end of token.
@@ -1359,8 +1369,8 @@ class FdfParser:
         if FdName == "":
             if len (self.Profile.FdDict) == 0:
                 FdName = GenFdsGlobalVariable.PlatformName
-                if FdName == "":
-                    FdName = GlobalData.gPlatformName
+                if FdName == "" and GlobalData.gActivePlatform:
+                    FdName = GlobalData.gActivePlatform.PlatformName
                 self.Profile.FdNameNotSet = True
             else:
                 raise Warning("expected FdName in [FD.] section", self.FileName, self.CurrentLineNumber)

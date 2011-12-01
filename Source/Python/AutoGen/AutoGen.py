@@ -184,7 +184,7 @@ class WorkspaceAutoGen(AutoGen):
         self.MetaFile       = ActivePlatform
         self.WorkspaceDir   = WorkspaceDir
         self.Platform       = self.BuildDatabase[self.MetaFile, 'COMMON', Target, Toolchain]
-        GlobalData.gPlatformName = self.Platform.PlatformName
+        GlobalData.gActivePlatform = self.Platform
         self.BuildTarget    = Target
         self.ToolChain      = Toolchain
         self.ArchList       = ArchList
