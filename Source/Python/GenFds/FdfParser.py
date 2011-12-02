@@ -180,7 +180,10 @@ class FileProfile :
 
         self.PcdDict = {}
         self.InfList = []
-
+        # ECC will use this Dict and List information
+        self.PcdFileLineDict = {}
+        self.InfFileLineList = []
+        
         self.FdDict = {}
         self.FdNameNotSet = False
         self.FvDict = {}
@@ -1465,6 +1468,8 @@ class FdfParser:
             pcdPair = self.__GetNextPcdName()
             Obj.BaseAddressPcd = pcdPair
             self.Profile.PcdDict[pcdPair] = Obj.BaseAddress
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
 
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing", self.FileName, self.CurrentLineNumber)
@@ -1481,6 +1486,8 @@ class FdfParser:
             pcdPair = self.__GetNextPcdName()
             Obj.SizePcd = pcdPair
             self.Profile.PcdDict[pcdPair] = Size
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
         Obj.Size = long(Size, 0)
 
         if not self.__IsKeyword( "ErasePolarity"):
@@ -1576,6 +1583,8 @@ class FdfParser:
             PcdPair = self.__GetNextPcdName()
             BlockSizePcd = PcdPair
             self.Profile.PcdDict[PcdPair] = BlockSize
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
         BlockSize = long(BlockSize, 0)
 
         BlockNumber = None
@@ -1665,6 +1674,8 @@ class FdfParser:
             if Obj:
                 Obj.SetVarDict[PcdPair] = Value
             self.Profile.PcdDict[PcdPair] = Value
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
             return True
 
         return False
@@ -1700,9 +1711,13 @@ class FdfParser:
             self.__UndoToken()
             RegionObj.PcdOffset = self.__GetNextPcdName()
             self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(Fd.BaseAddress, 0))
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[RegionObj.PcdOffset] = FileLineTuple
             if self.__IsToken( "|"):
                 RegionObj.PcdSize = self.__GetNextPcdName()
                 self.Profile.PcdDict[RegionObj.PcdSize] = "0x%08X" % RegionObj.Size
+                FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+                self.Profile.PcdFileLineDict[RegionObj.PcdSize] = FileLineTuple
 
             if not self.__GetNextWord():
                 return True
@@ -2280,6 +2295,8 @@ class FdfParser:
 
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.InfFileLineList.append(FileLineTuple)
 
         if self.__IsToken('|'):
             if self.__IsKeyword('RELOCS_STRIPPED'):
@@ -3957,6 +3974,8 @@ class FdfParser:
 
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.InfFileLineList.append(FileLineTuple)
 
         
         self.__GetOptRomOverrides (ffsInf)
