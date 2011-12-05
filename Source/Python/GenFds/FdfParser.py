@@ -1584,7 +1584,7 @@ class FdfParser:
             BlockSizePcd = PcdPair
             self.Profile.PcdDict[PcdPair] = BlockSize
             FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
-            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
+            self.Profile.PcdFileLineDict[PcdPair] = FileLineTuple
         BlockSize = long(BlockSize, 0)
 
         BlockNumber = None
@@ -1675,7 +1675,7 @@ class FdfParser:
                 Obj.SetVarDict[PcdPair] = Value
             self.Profile.PcdDict[PcdPair] = Value
             FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
-            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
+            self.Profile.PcdFileLineDict[PcdPair] = FileLineTuple
             return True
 
         return False
