@@ -750,7 +750,7 @@ class Build():
         EdkLogger.info('%-16s = %s' % ("Build target", ' '.join(self.BuildTargetList)))
         EdkLogger.info('%-16s = %s' % ("Toolchain", ' '.join(self.ToolChainList)))
 
-        EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile))
+        EdkLogger.info('\n%-16s = %s' % ("Active Platform", self.PlatformFile))
         if self.ModuleFile:
             EdkLogger.info('%-16s = %s' % ("Active Module", self.ModuleFile))
 
