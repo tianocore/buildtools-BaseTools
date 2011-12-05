@@ -76,17 +76,12 @@ def ParseMacro(Parser):
                     if MODEL_META_DATA_HEADER in self._SectionType:
                         self._FileLocalMacros[Name] = Value
                     else:
-                        for Scope in self._Scope:
-                            self._SectionsMacroDict.setdefault((Scope[2], Scope[0], Scope[1]), {})[Name] = Value
+                        self._ConstructSectionMacroDict(Name, Value)
                 elif self._SectionType == MODEL_META_DATA_HEADER:
                     self._FileLocalMacros[Name] = Value
                 else:
-                    SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
-                    if SectionDictKey not in self._SectionsMacroDict:
-                        self._SectionsMacroDict[SectionDictKey] = {}
-                    SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
-                    SectionLocalMacros[Name] = Value
-            
+                    self._ConstructSectionMacroDict(Name, Value)
+
         # EDK_GLOBAL defined macros
         elif type(self) != DscParser:
             EdkLogger.error('Parser', FORMAT_INVALID, "EDK_GLOBAL can only be used in .dsc file",
@@ -371,15 +366,60 @@ class MetaFileParser(object):
         Macros.update(self._GetApplicableSectionMacro())
         return Macros
 
+    ## Construct section Macro dict 
+    def _ConstructSectionMacroDict(self, Name, Value):
+        ScopeKey = [(Scope[0], Scope[1]) for Scope in self._Scope]
+        ScopeKey = tuple(ScopeKey)
+        SectionDictKey = self._SectionType, ScopeKey
+        #
+        # DecParser SectionType is a list, will contain more than one item only in Pcd Section
+        # As Pcd section macro usage is not alllowed, so here it is safe
+        #
+        if type(self) == DecParser:
+            SectionDictKey = self._SectionType[0], ScopeKey
+        if SectionDictKey not in self._SectionsMacroDict:
+            self._SectionsMacroDict[SectionDictKey] = {}
+        SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
+        SectionLocalMacros[Name] = Value
 
     ## Get section Macros that are applicable to current line, which may come from other sections 
     ## that share the same name while scope is wider
     def _GetApplicableSectionMacro(self):
         Macros = {}
-        for Scope1, Scope2 in [("COMMON", "COMMON"), ("COMMON", self._Scope[0][1]),
-                               (self._Scope[0][0], "COMMON"), (self._Scope[0][0], self._Scope[0][1])]:
-            if (self._SectionType, Scope1, Scope2) in self._SectionsMacroDict:
-                Macros.update(self._SectionsMacroDict[(self._SectionType, Scope1, Scope2)])
+
+        ComComMacroDict = {}
+        ComSpeMacroDict = {}
+        SpeSpeMacroDict = {}
+        
+        ActiveSectionType = self._SectionType
+        if type(self) == DecParser:
+            ActiveSectionType = self._SectionType[0]
+            
+        for (SectionType, Scope) in self._SectionsMacroDict:
+            if SectionType != ActiveSectionType:
+                continue
+
+            for ActiveScope in self._Scope:
+                Scope0, Scope1 = ActiveScope[0], ActiveScope[1]
+                if(Scope0, Scope1) not in Scope:
+                    break
+            else:
+                SpeSpeMacroDict.update(self._SectionsMacroDict[(SectionType, Scope)])
+            
+            for ActiveScope in self._Scope:
+                Scope0, Scope1 = ActiveScope[0], ActiveScope[1]
+                if(Scope0, Scope1) not in Scope and (Scope0, "COMMON") not in Scope and ("COMMON", Scope1) not in Scope:
+                    break
+            else:
+                ComSpeMacroDict.update(self._SectionsMacroDict[(SectionType, Scope)])
+
+            if ("COMMON", "COMMON") in Scope:
+                ComComMacroDict.update(self._SectionsMacroDict[(SectionType, Scope)])
+
+        Macros.update(ComComMacroDict)
+        Macros.update(ComSpeMacroDict)
+        Macros.update(SpeSpeMacroDict)
+
         return Macros
 
     _SectionParser  = {}
@@ -1195,11 +1235,7 @@ class DscParser(MetaFileParser):
             if self._SectionType == MODEL_META_DATA_HEADER:
                 self._FileLocalMacros[Name] = Value
             else:
-                SectionDictKey = self._SectionType, self._Scope[0][0], self._Scope[0][1]
-                if SectionDictKey not in self._SectionsMacroDict:
-                    self._SectionsMacroDict[SectionDictKey] = {}
-                SectionLocalMacros = self._SectionsMacroDict[SectionDictKey]
-                SectionLocalMacros[Name] = Value
+                self._ConstructSectionMacroDict(Name, Value)
         elif self._ItemType == MODEL_META_DATA_GLOBAL_DEFINE:
             GlobalData.gEdkGlobal[Name] = Value
         
@@ -1530,13 +1566,6 @@ class DecParser(MetaFileParser):
             self._Comments = []
         self._Done()
 
-    def _GetApplicableSectionMacro(self):
-        Macros = {}
-        for S1, S2, SectionType in self._Scope:
-            for Scope1, Scope2 in [("COMMON", "COMMON"), ("COMMON", S2), (S1, "COMMON"), (S1, S2)]:
-                if (SectionType, Scope1, Scope2) in self._SectionsMacroDict:
-                    Macros.update(self._SectionsMacroDict[(SectionType, Scope1, Scope2)])
-        return Macros
 
     ## Section header parser
     #
