@@ -1636,7 +1636,28 @@ class DecParser(MetaFileParser):
                                       " (<CName> = <GuidValueInCFormat:{8,4,4,{2,2,2,2,2,2,2,2}}>)",
                             File=self.MetaFile, Line=self._LineIndex+1)
         self._ValueList[0] = TokenList[0]
-        self._ValueList[1] = TokenList[1]
+        #Parse the Guid value format
+        GuidValueList = TokenList[1].strip(' {}').split(',')
+        Index = 0
+        HexList = []
+        if len(GuidValueList) == 11:
+            for GuidValue in GuidValueList:
+                GuidValue = GuidValue.strip()
+                if GuidValue.startswith('0x') or GuidValue.startswith('0X'):
+                    HexList.append('0x' + str(GuidValue[2:]))
+                    Index += 1
+                    continue
+                else:
+                    if GuidValue.startswith('{'):
+                        HexList.append('0x' + str(GuidValue[3:]))
+                        Index += 1
+            self._ValueList[1] = "{ %s, %s, %s, { %s, %s, %s, %s, %s, %s, %s, %s }}" % (HexList[0], HexList[1], HexList[2],HexList[3],HexList[4],HexList[5],HexList[6],HexList[7],HexList[8],HexList[9],HexList[10])
+        else:
+            EdkLogger.error('Parser', FORMAT_INVALID, "Invalid GUID value format",
+                            ExtraData=self._CurrentLine + \
+                                      " (<CName> = <GuidValueInCFormat:{8,4,4,{2,2,2,2,2,2,2,2}}>)",
+                            File=self.MetaFile, Line=self._LineIndex+1)
+            self._ValueList[0] = ''
 
     ## PCD sections parser
     #

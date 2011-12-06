@@ -438,14 +438,14 @@ class Check(object):
                             #
                             # check whether file header comment section started
                             #
-                            if Line.startswith('##') and \
+                            if Line.startswith('#') and \
                                 (Line.find('@file') > -1) and \
                                 not HeaderCommentStart:
                                 if CurrentSection != MODEL_UNKNOWN:
                                     SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
                                     ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
                                     for Result in ResultSet:
-                                        Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" at the very top file'
+                                        Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" or ""# @file""at the very top file'
                                         EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
 
                                 else:
@@ -479,7 +479,7 @@ class Check(object):
                             SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
                             ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
                             for Result in ResultSet:
-                                Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" at the very top file'
+                                Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file"" or ""# @file"" at the very top file'
                                 EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
                         if HeaderCommentEnd == False:
                             SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
@@ -932,16 +932,16 @@ class Check(object):
         if Model == MODEL_EFI_PPI:
             Name = 'ppi'
         SqlCommand = """
-                     select A.ID, A.Value2 from %s as A, %s as B
+                     select A.ID, A.Value1, A.Value2 from %s as A, %s as B
                      where A.Model = %s and B.Model = %s
                      and A.Value2 = B.Value2 and A.ID <> B.ID
-                     and A.Scope1 = B.Scope1
+                     and A.Scope1 = B.Scope1 and A.Value1 <> B.Value1
                      group by A.ID
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
-        for Record in RecordSet:
-            if not EccGlobalData.gException.IsException(ErrorID, Record[1]):
-                EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg="The %s value [%s] is used more than one time" % (Name.upper(), Record[1]), BelongsToTable=Table.Table, BelongsToItem=Record[0])
+        for Record in RecordSet:     
+            if not EccGlobalData.gException.IsException(ErrorID, Record[1] + ':' + Record[2]):
+                EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg="The %s value [%s] is used more than one time" % (Name.upper(), Record[2]), BelongsToTable=Table.Table, BelongsToItem=Record[0])
 
     # Naming Convention Check
     def NamingConventionCheck(self):
