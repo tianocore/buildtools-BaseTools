@@ -262,7 +262,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._Guid == None:
-                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No FILE_GUID", File=self.MetaFile)
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_GUID", File=self.MetaFile)
         return self._Guid
 
     ## Retrieve platform version
@@ -271,7 +271,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._Version == None:
-                self._Version = ''
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_VERSION", File=self.MetaFile)
         return self._Version
 
     ## Retrieve platform description file version
@@ -280,7 +280,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._DscSpecification == None:
-                self._DscSpecification = ''
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No DSC_SPECIFICATION", File=self.MetaFile)                
         return self._DscSpecification
 
     ## Retrieve OUTPUT_DIRECTORY
@@ -298,7 +298,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._SupArchList == None:
-                self._SupArchList = ARCH_LIST
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No SUPPORTED_ARCHITECTURES", File=self.MetaFile)
         return self._SupArchList
 
     ## Retrieve BUILD_TARGETS
@@ -307,7 +307,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._BuildTargets == None:
-                self._BuildTargets = ['DEBUG', 'RELEASE', 'NOOPT']
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BUILD_TARGETS", File=self.MetaFile)
         return self._BuildTargets
 
     ## Retrieve SKUID_IDENTIFIER
