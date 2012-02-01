@@ -137,13 +137,13 @@ class Ecc(object):
         EccGlobalData.gDb.TblReport.Create()
 
         # Build database
-        if self.IsInit:
-            if self.ScanSourceCode:
-                EdkLogger.quiet("Building database for source code ...")
-                c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
+        if self.IsInit:            
             if self.ScanMetaData:
-                EdkLogger.quiet("Building database for source code done!")
+                EdkLogger.quiet("Building database for Meta Data File ...")
                 self.BuildMetaDataFileDatabase()
+            if self.ScanSourceCode:
+                EdkLogger.quiet("Building database for Meta Data File Done!")
+                c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
 
         EccGlobalData.gIdentifierTableList = GetTableList((MODEL_FILE_C, MODEL_FILE_H), 'Identifier', EccGlobalData.gDb)
         EccGlobalData.gCFileList = GetFileList(MODEL_FILE_C, EccGlobalData.gDb)
