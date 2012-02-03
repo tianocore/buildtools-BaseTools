@@ -77,6 +77,7 @@ SEPERATOR_TUPLE = ('=', '|', ',', '{', '}')
 
 RegionSizePattern = re.compile("\s*(?P<base>(?:0x|0X)?[a-fA-F0-9]+)\s*\|\s*(?P<size>(?:0x|0X)?[a-fA-F0-9]+)\s*")
 RegionSizeGuidPattern = re.compile("\s*(?P<base>\w+\.\w+)\s*\|\s*(?P<size>\w+\.\w+)\s*")
+ShortcutPcdPattern = re.compile("\s*\w+\s*=\s*(?P<value>(?:0x|0X)?[a-fA-F0-9]+)\s*\|\s*(?P<name>\w+\.\w+)\s*")
 
 IncludeFileList = []
 
@@ -679,7 +680,7 @@ class FdfParser:
                     PreIndex = 0
                     StartPos = CurLine.find('$(', PreIndex)
                     EndPos = CurLine.find(')', StartPos+2)
-                    while StartPos != -1 and EndPos != -1 and not (self.__Token == '!ifdef' or self.__Token == '!ifndef'):
+                    while StartPos != -1 and EndPos != -1 and self.__Token not in ['!ifdef', '!ifndef', '!if', '!elseif']:
                         MacroName = CurLine[StartPos+2 : EndPos]
                         MacorValue = self.__GetMacroValue(MacroName)
                         if MacorValue != None:
@@ -711,6 +712,8 @@ class FdfParser:
                     self.__SetMacroValue(Macro, Value)
                     self.__WipeOffArea.append(((DefineLine, DefineOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token == 'SET':
+                SetLine = self.CurrentLineNumber - 1
+                SetOffset = self.CurrentOffsetWithinLine - len('SET')
                 PcdPair = self.__GetNextPcdName()
                 PcdName = "%s.%s" % (PcdPair[1], PcdPair[0])
                 if not self.__IsToken( "="):
@@ -720,6 +723,12 @@ class FdfParser:
                 Value = self.__EvaluateConditional(Value, self.CurrentLineNumber, 'eval', True)
 
                 self.__PcdDict[PcdName] = Value
+
+                self.Profile.PcdDict[PcdPair] = Value
+                FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+                self.Profile.PcdFileLineDict[PcdPair] = FileLineTuple
+
+                self.__WipeOffArea.append(((SetLine, SetOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token in ('!ifdef', '!ifndef', '!if'):
                 IfStartPos = (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - len(self.__Token))
                 IfList.append([IfStartPos, None, None])
@@ -772,6 +781,11 @@ class FdfParser:
             elif not IfList:    # Don't use PCDs inside conditional directive
                 if self.CurrentLineNumber <= RegionLayoutLine:
                     # Don't try the same line twice
+                    continue
+                SetPcd = ShortcutPcdPattern.match(self.Profile.FileLinesList[self.CurrentLineNumber - 1])
+                if SetPcd:
+                    self.__PcdDict[SetPcd.group('name')] = SetPcd.group('value')
+                    RegionLayoutLine = self.CurrentLineNumber
                     continue
                 RegionSize = RegionSizePattern.match(self.Profile.FileLinesList[self.CurrentLineNumber - 1])
                 if not RegionSize:
