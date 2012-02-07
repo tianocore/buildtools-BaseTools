@@ -516,10 +516,13 @@ class GenFds :
             for ModuleFile in PlatformDataBase.Modules:
                 Module = BuildDb.BuildObject[ModuleFile, Arch, GenFdsGlobalVariable.TargetName, GenFdsGlobalVariable.ToolChainTag]
                 GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
-        SaveFileOnChange(GuidXRefFileName, GuidXRefFile.getvalue(), False)
+        if GuidXRefFile.getvalue():
+            SaveFileOnChange(GuidXRefFileName, GuidXRefFile.getvalue(), False)
+            GenFdsGlobalVariable.InfLogger("\nGUID cross reference file can be found at %s" % GuidXRefFileName)
+        elif os.path.exists(GuidXRefFileName):
+            os.remove(GuidXRefFileName)
         GuidXRefFile.close()
-        GenFdsGlobalVariable.InfLogger("\nGUID cross reference file can be found at %s" % GuidXRefFileName)
-        
+
     ##Define GenFd as static function
     GenFd = staticmethod(GenFd)
     GetFvBlockSize = staticmethod(GetFvBlockSize)
