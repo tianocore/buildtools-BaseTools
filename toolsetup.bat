@@ -158,14 +158,6 @@ if NOT exist %WORKSPACE%\Conf (
   )
 )
 
-if NOT exist %WORKSPACE%\Conf\FrameworkDatabase.db (
-  echo copying ... FrameworkDatabase.template to %WORKSPACE%\Conf\FrameworkDatabase.db
-  copy %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
-) else (
-  if defined RECONFIG echo over-write ... FrameworkDatabase.template to %WORKSPACE%\Conf\FrameworkDatabase.db
-  if defined RECONFIG copy /Y %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
-)
-
 if NOT exist %WORKSPACE%\Conf\target.txt (
   echo copying ... target.template to %WORKSPACE%\Conf\target.txt
   if NOT exist %EDK_TOOLS_PATH%\Conf\target.template (

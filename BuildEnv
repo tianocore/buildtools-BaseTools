@@ -208,7 +208,6 @@ CopySingleTemplateFile() {
 CopyTemplateFiles() {
 
   CopySingleTemplateFile build_rule
-  CopySingleTemplateFile FrameworkDatabase
   CopySingleTemplateFile tools_def
   CopySingleTemplateFile target
 
