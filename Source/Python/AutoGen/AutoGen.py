@@ -334,11 +334,14 @@ class WorkspaceAutoGen(AutoGen):
                     #
                     InfFoundFlag = False                   
                     for Pa in self.AutoGenObjectList:
+                        if InfFoundFlag:
+                            break
                         for Module in Pa.ModuleAutoGenList:
                             if path.normpath(Module.MetaFile.File) == path.normpath(FfsFile.InfFileName):
                                 InfFoundFlag = True
                                 if not Module.Guid.upper() in _GuidDict.keys():
                                     _GuidDict[Module.Guid.upper()] = FfsFile
+                                    break
                                 else:
                                     EdkLogger.error("build", 
                                                     FORMAT_INVALID,
