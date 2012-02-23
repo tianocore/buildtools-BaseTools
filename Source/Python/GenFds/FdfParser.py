@@ -807,6 +807,7 @@ class FdfParser:
         MacroDict = {}
 
         # PCD macro
+        MacroDict.update(GlobalData.gPlatformPcds)
         MacroDict.update(self.__PcdDict)
 
         # Lowest priority

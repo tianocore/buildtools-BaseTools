@@ -1386,7 +1386,8 @@ class DscParser(MetaFileParser):
             try:
                 ValueList[0] = ValueExpression(PcdValue, self._Macros)(True)
             except WrnExpression, Value:
-                ValueList[0] = Value.result          
+                ValueList[0] = Value.result
+            PcdValue = ValueList[0]
         else:
             #
             # Int*/Boolean VPD PCD
@@ -1412,8 +1413,10 @@ class DscParser(MetaFileParser):
                 if ValueList[-1] == 'True':
                     ValueList[-1] = '1'
                 if ValueList[-1] == 'False':
-                    ValueList[-1] = '0'      
-
+                    ValueList[-1] = '0'
+                PcdValue = ValueList[-1]
+        if PcdValue and self._ItemType in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
+            GlobalData.gPlatformPcds[TAB_SPLIT.join(self._ValueList[0:2])] = PcdValue
         self._ValueList[2] = '|'.join(ValueList)
 
     def __ProcessComponent(self):

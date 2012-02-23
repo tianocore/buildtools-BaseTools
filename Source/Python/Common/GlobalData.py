@@ -26,6 +26,7 @@ gAllFiles = None
 
 gGlobalDefines = {}
 gPlatformDefines = {}
+gPlatformPcds = {}
 gActivePlatform = None
 gCommandLineDefines = {}
 gEdkGlobal = {}
