@@ -28,6 +28,7 @@ from Common.String import NormPath
 from Common.BuildVersion import gBUILD_VERSION
 from Common import BuildToolError
 from Common.Misc import PathClass
+from Common.Misc import DirCache
 from MetaFileWorkspace.MetaFileParser import DscParser
 from MetaFileWorkspace.MetaFileParser import DecParser
 from MetaFileWorkspace.MetaFileParser import InfParser
@@ -106,6 +107,11 @@ class Ecc(object):
         EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
         EccGlobalData.gDb.InitDatabase(self.IsInit)
 
+        #
+        # Get files real name in workspace dir
+        #
+        GlobalData.gAllFiles = DirCache(GlobalData.gWorkspace)
+         
         # Build ECC database
         self.BuildDatabase()
 
