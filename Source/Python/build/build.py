@@ -59,6 +59,8 @@ gBuildConfiguration = "Conf/target.txt"
 gBuildCacheDir = "Conf/.cache"
 gToolsDefinition = "Conf/tools_def.txt"
 
+TemporaryTablePattern = re.compile(r'^_\d+_\d+_[a-fA-F0-9]+$')
+
 ## Check environment PATH variable to make sure the specified tool is found
 #
 #   If the tool is found in the PATH, then True is returned
@@ -1448,6 +1450,15 @@ class Build():
                     if BuildTask.HasError():
                         EdkLogger.error("build", BUILD_ERROR, "Failed to build module", ExtraData=GlobalData.gBuildingModule)
 
+                                 #
+                # Drop temp tables to avoid database be locked.
+                #
+                for Key in Wa.BuildDatabase._CACHE_:
+                    if Wa.BuildDatabase._CACHE_[Key]._RawData and Wa.BuildDatabase._CACHE_[Key]._RawData._Table and Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table:
+                        if TemporaryTablePattern.match(Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table):
+                            Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Drop()
+                            Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table = 0
+                #
                 #
                 # All modules have been put in build tasks queue. Tell task scheduler
                 # to exit if all tasks are completed
