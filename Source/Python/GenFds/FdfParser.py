@@ -2302,6 +2302,10 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected INF file path", self.FileName, self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
+
+        ffsInf.CurrentLineNum = self.CurrentLineNumber
+        ffsInf.CurrentLineContent = self.__CurrentLine()
+
         if ffsInf.InfFileName.replace('$(WORKSPACE)', '').find('$') == -1:
             #do case sensitive check for file path
             ErrorCode, ErrorInfo = PathClass(NormPath(ffsInf.InfFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
@@ -2320,9 +2324,6 @@ class FdfParser:
                 ffsInf.KeepReloc = True
             else:
                 raise Warning("Unknown reloc strip flag '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
-        
-        ffsInf.CurrentLineNum = self.CurrentLineNumber
-        ffsInf.CurrentLineContent = self.__CurrentLine()
         
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
@@ -2434,9 +2435,6 @@ class FdfParser:
                 
         FfsFileObj.NameGuid = self.__Token
         
-        FfsFileObj.CurrentLineNum = self.CurrentLineNumber
-        FfsFileObj.CurrentLineContent = self.__CurrentLine()
-        
         self.__GetFilePart( FfsFileObj, MacroDict.copy())
 
         if ForCapsule:
@@ -2526,6 +2524,8 @@ class FdfParser:
             self.__UndoToken()
             self.__GetSectionData( FfsFileObj, MacroDict)
         else:
+            FfsFileObj.CurrentLineNum = self.CurrentLineNumber
+            FfsFileObj.CurrentLineContent = self.__CurrentLine()
             FfsFileObj.FileName = self.__Token
             if FfsFileObj.FileName.replace('$(WORKSPACE)', '').find('$') == -1:
                 #
