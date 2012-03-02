@@ -463,7 +463,8 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=LineNo,
                                 ExtraData=ErrorInfo)
             # Check duplication
-            if ModuleFile in self._Modules:
+            # If arch is COMMON, no duplicate module is checked since all modules in all component sections are selected
+            if self._Arch != 'COMMON' and ModuleFile in self._Modules:
                 EdkLogger.error('build', FILE_DUPLICATED, File=self.MetaFile, ExtraData=str(ModuleFile), Line=LineNo)
 
             Module = ModuleBuildClassObject()

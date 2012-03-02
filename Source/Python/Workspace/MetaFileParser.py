@@ -913,6 +913,9 @@ class DscParser(MetaFileParser):
                             ExtraData=self._CurrentLine)
 
         ItemType = self.DataType[DirectiveName]
+        Scope = [['COMMON', 'COMMON']]
+        if ItemType == MODEL_META_DATA_INCLUDE:
+            Scope = self._Scope
         if ItemType == MODEL_META_DATA_CONDITIONAL_STATEMENT_ENDIF:
             # Remove all directives between !if and !endif, including themselves
             while self._DirectiveStack:
@@ -945,21 +948,22 @@ class DscParser(MetaFileParser):
         # Model, Value1, Value2, Value3, Arch, ModuleType, BelongsToItem=-1, BelongsToFile=-1,
         # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, Enabled=-1
         #
-        self._LastItem = self._Store(
-                                ItemType,
-                                self._ValueList[0],
-                                self._ValueList[1],
-                                self._ValueList[2],
-                                'COMMON',
-                                'COMMON',
-                                self._Owner[-1],
-                                self._From,
-                                self._LineIndex+1,
-                                -1,
-                                self._LineIndex+1,
-                                -1,
-                                0
-                                )
+        for Arch, ModuleType in Scope:
+            self._LastItem = self._Store(
+                                    ItemType,
+                                    self._ValueList[0],
+                                    self._ValueList[1],
+                                    self._ValueList[2],
+                                    Arch,
+                                    ModuleType,
+                                    self._Owner[-1],
+                                    self._From,
+                                    self._LineIndex+1,
+                                    -1,
+                                    self._LineIndex+1,
+                                    -1,
+                                    0
+                                    )
 
     ## [defines] section parser
     @ParseMacro
@@ -1154,6 +1158,21 @@ class DscParser(MetaFileParser):
             self._ContentIndex += 1
 
             self._Scope = [[S1, S2]]
+            #
+            # For !include directive, handle it specially,
+            # merge arch and module type in case of duplicate items
+            #
+            while self._ItemType == MODEL_META_DATA_INCLUDE:
+                if self._ContentIndex >= len(self._Content):
+                    break
+                Record = self._Content[self._ContentIndex]
+                if LineStart == Record[9] and LineEnd == Record[11]:
+                    if [Record[5], Record[6]] not in self._Scope:
+                        self._Scope.append([Record[5], Record[6]])
+                    self._ContentIndex += 1
+                else:
+                    break
+
             self._LineIndex = LineStart - 1
             self._ValueList = [V1, V2, V3]
 
