@@ -315,7 +315,7 @@ def myOptionParser():
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Build the FV image using the [FV] section named by UiFvName")
     Parser.add_option("-C", "--CapsuleImage", dest="uiCapName", help="Build the Capsule image using the [Capsule] section named by UiCapName")
     Parser.add_option("-b", "--buildtarget", type="string", dest="BuildTarget", help="Set the build TARGET, overrides target.txt TARGET setting.",
-                      action="append")
+                      action="callback", callback=SingleCheckCallback)
     Parser.add_option("-t", "--tagname", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.",
                       action="callback", callback=SingleCheckCallback)
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
