@@ -33,7 +33,7 @@ from Common.Misc import GuidStructureStringToGuidString
 from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_WRITE_FAILURE
 from Common.BuildToolError import CODE_ERROR
-
+from Common.DataType import TAB_LINE_BREAK
 
 ## Pattern to extract contents in EDK DXS files
 gDxsDependencyPattern = re.compile(r"DEPENDENCY_START(.+)DEPENDENCY_END", re.DOTALL)
@@ -63,15 +63,18 @@ gIncludePattern2 = re.compile(r"#include\s+EFI_([A-Z_]+)\s*[(]\s*(\w+)\s*[)]")
 ## Pattern to find the entry point for EDK module using EDKII Glue library
 gGlueLibEntryPoint = re.compile(r"__EDKII_GLUE_MODULE_ENTRY_POINT__\s*=\s*(\w+)")
 
+## Tags for MaxLength of line in report
+gLineMaxLength = 120
+
 ## Tags for section start, end and separator
-gSectionStart = ">" + "=" * 118 + "<"
-gSectionEnd = "<" + "=" * 118 + ">" + "\n"
-gSectionSep = "=" * 120
+gSectionStart = ">" + "=" * (gLineMaxLength-2) + "<"
+gSectionEnd = "<" + "=" * (gLineMaxLength-2) + ">" + "\n"
+gSectionSep = "=" * gLineMaxLength
 
 ## Tags for subsection start, end and separator
-gSubSectionStart = ">" + "-" * 118 + "<"
-gSubSectionEnd = "<" + "-" * 118 + ">"
-gSubSectionSep = "-" * 120
+gSubSectionStart = ">" + "-" * (gLineMaxLength-2) + "<"
+gSubSectionEnd = "<" + "-" * (gLineMaxLength-2) + ">"
+gSubSectionSep = "-" * gLineMaxLength
 
 ## The look up table to map PCD type to pair of report display type and DEC type
 gPcdTypeMap = {
@@ -166,6 +169,30 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
                 IncludeFiles[FullFileName.lower().replace("\\", "/")] = FullFileName
                 break
 
+## Split each lines in file
+#
+#  This method is used to split the lines in file to make the length of each line 
+#  less than MaxLength.
+#
+#  @param      Content           The content of file
+#  @param      MaxLength         The Max Length of the line
+#
+def FileLinesSplit(Content=None, MaxLength=None):
+    ContentList = Content.split(TAB_LINE_BREAK)
+    NewContent = ''
+    NewContentList = []
+    for Line in ContentList:
+        while len(Line) > MaxLength:
+            NewContentList.append(Line[:MaxLength])
+            Line = Line[MaxLength:]
+        if Line:
+            NewContentList.append(Line)
+    for NewLine in NewContentList:
+        NewContent += NewLine + os.linesep
+    return NewContent
+    
+    
+    
 ##
 # Parse binary dependency expression section
 #
@@ -1511,7 +1538,8 @@ class BuildReport(object):
                 File = StringIO('')
                 for (Wa, MaList) in self.ReportList:
                     PlatformReport(Wa, MaList, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
-                SaveFileOnChange(self.ReportFile, File.getvalue(), False)
+                Content = FileLinesSplit(File.getvalue(), gLineMaxLength)
+                SaveFileOnChange(self.ReportFile, Content, True)
                 EdkLogger.quiet("Build report can be found at %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
