@@ -340,6 +340,7 @@ class MetaFileParser(object):
     ## [BuildOptions] section parser
     @ParseMacro
     def _BuildOptionParser(self):
+        self._CurrentLine = CleanString(self._CurrentLine, BuildOption=True)
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         TokenList2 = GetSplitValueList(TokenList[0], ':', 1)
         if len(TokenList2) == 2:
@@ -1069,6 +1070,7 @@ class DscParser(MetaFileParser):
     ## [BuildOptions] section parser
     @ParseMacro
     def _BuildOptionParser(self):
+        self._CurrentLine = CleanString(self._CurrentLine, BuildOption=True)
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         TokenList2 = GetSplitValueList(TokenList[0], ':', 1)
         if len(TokenList2) == 2:
