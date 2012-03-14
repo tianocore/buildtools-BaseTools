@@ -1821,18 +1821,6 @@ def Main():
 
         MyBuild = Build(Target, Workspace, Option)
         GlobalData.gCommandLineDefines['ARCH'] = ' '.join(MyBuild.ArchList)
-        GlobalData.gCommandLineDefines['TOOL_CHAIN_TAG'] = ' '.join(MyBuild.ToolChainList)
-        FamilyList = []
-        for ToolChain in MyBuild.ToolChainList:
-            Family = 'MSFT'
-            try:
-                Family = MyBuild.ToolDef.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][ToolChain]
-            except KeyError:
-                pass
-            if Family not in FamilyList:
-                FamilyList.append(Family)
-        GlobalData.gCommandLineDefines['FAMILY'] = ' '.join(FamilyList)
-        GlobalData.gCommandLineDefines['TARGET'] = ' '.join(MyBuild.BuildTargetList)
         MyBuild.Launch()
         #MyBuild.DumpBuildData()
     except FatalError, X:
