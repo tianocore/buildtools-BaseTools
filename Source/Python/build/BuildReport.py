@@ -34,6 +34,9 @@ from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_WRITE_FAILURE
 from Common.BuildToolError import CODE_ERROR
 from Common.DataType import TAB_LINE_BREAK
+from Common.DataType import TAB_INF_PCD
+from Common.DataType import EDK_COMPONENT_TYPE_LIBRARY
+from Common.DataType import TAB_DEPEX
 
 ## Pattern to extract contents in EDK DXS files
 gDxsDependencyPattern = re.compile(r"DEPENDENCY_START(.+)DEPENDENCY_END", re.DOTALL)
@@ -75,6 +78,7 @@ gSectionSep = "=" * gLineMaxLength
 gSubSectionStart = ">" + "-" * (gLineMaxLength-2) + "<"
 gSubSectionEnd = "<" + "-" * (gLineMaxLength-2) + ">"
 gSubSectionSep = "-" * gLineMaxLength
+
 
 ## The look up table to map PCD type to pair of report display type and DEC type
 gPcdTypeMap = {
@@ -178,7 +182,7 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
 #  @param      MaxLength         The Max Length of the line
 #
 def FileLinesSplit(Content=None, MaxLength=None):
-    ContentList = Content.split(TAB_LINE_BREAK)
+    ContentList = Content.split(os.linesep)
     NewContent = ''
     NewContentList = []
     for Line in ContentList:
@@ -290,7 +294,7 @@ class LibraryReport(object):
     #
     def GenerateReport(self, File):
         FileWrite(File, gSubSectionStart)
-        FileWrite(File, "Library")
+        FileWrite(File, EDK_COMPONENT_TYPE_LIBRARY)
         if len(self.LibraryList) > 0:
             FileWrite(File, gSubSectionSep)
             for LibraryItem in self.LibraryList:
@@ -382,8 +386,10 @@ class DepexReport(object):
     #
     def GenerateReport(self, File, GlobalDepexParser):
         if not self.Depex:
+            FileWrite(File, gSubSectionStart)
+            FileWrite(File, TAB_DEPEX)
+            FileWrite(File, gSubSectionEnd)
             return
-
         FileWrite(File, gSubSectionStart)
         if os.path.isfile(self._DepexFileName):
             try:
@@ -712,7 +718,7 @@ class PcdReport(object):
             # For module PCD sub-section
             #
             FileWrite(File, gSubSectionStart)
-            FileWrite(File, "PCD")
+            FileWrite(File, TAB_INF_PCD)
             FileWrite(File, gSubSectionSep)
 
         for Key in self.AllPcds:
