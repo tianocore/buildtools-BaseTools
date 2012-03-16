@@ -46,6 +46,9 @@ gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 ## Build rule configuration file
 gBuildRuleFile = 'Conf/build_rule.txt'
 
+## Build rule default version
+AutoGenReqBuildRuleVerNum = "0.1"
+
 ## default file name for AutoGen
 gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
@@ -1233,6 +1236,15 @@ class PlatformAutoGen(AutoGen):
             if BuildRuleFile in [None, '']:
                 BuildRuleFile = gBuildRuleFile
             self._BuildRule = BuildRule(BuildRuleFile)
+            if self._BuildRule._FileVersion == "":
+                self._BuildRule._FileVersion = AutoGenReqBuildRuleVerNum
+            else:
+                if self._BuildRule._FileVersion < AutoGenReqBuildRuleVerNum :
+                    # If Build Rule's version is less than the version number required by the tools, halting the build.
+                    EdkLogger.error("build", AUTOGEN_ERROR, 
+                                    ExtraData="The version number [%s] of build_rule.txt is less than the version number required by the AutoGen.(the minimum required version number is [%s])"\
+                                     % (self._BuildRule._FileVersion, AutoGenReqBuildRuleVerNum))
+              
         return self._BuildRule
 
     ## Summarize the packages used by modules in this platform
