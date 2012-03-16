@@ -190,6 +190,7 @@ static SRes Decode(ISeqOutStream *outStream, ISeqInStream *inStream, UInt64 file
   size_t outSize = 0;
   size_t inSizePure;
   ELzmaStatus status;
+  UInt64 outSize64 = 0;
 
   int i;
 
@@ -206,8 +207,9 @@ static SRes Decode(ISeqOutStream *outStream, ISeqInStream *inStream, UInt64 file
   }
 
   for (i = 0; i < 8; i++)
-    outSize += (UInt64)inBuffer[LZMA_PROPS_SIZE + i] << (i * 8);
+    outSize64 += ((UInt64)inBuffer[LZMA_PROPS_SIZE + i]) << (i * 8);
 
+  outSize = (size_t)outSize64;
   if (outSize != 0) {
     outBuffer = (Byte *)MyAlloc(outSize);
     if (outBuffer == 0) {
