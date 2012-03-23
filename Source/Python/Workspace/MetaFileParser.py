@@ -1185,9 +1185,23 @@ class DscParser(MetaFileParser):
                 # Only catch expression evaluation error here. We need to report
                 # the precise number of line on which the error occurred
                 #
-                EdkLogger.error('Parser', FORMAT_INVALID, "Invalid expression: %s" % str(Excpt),
-                                File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
-                                Line=self._LineIndex+1)
+                if hasattr(Excpt, 'Pcd'):
+                    if Excpt.Pcd in GlobalData.gPlatformOtherPcds:
+                        Info = GlobalData.gPlatformOtherPcds[Excpt.Pcd]
+                        EdkLogger.error('Parser', FORMAT_INVALID, "Cannot use this PCD (%s) in an expression as"
+                                        " it must be defined in a [PcdsFixedAtBuild] or [PcdsFeatureFlag] section"
+                                        " of the DSC file, and it is currently defined in this section:"
+                                        " %s, line #: %d." % (Excpt.Pcd, Info[0], Info[1]),
+                                    File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
+                                    Line=self._LineIndex+1)
+                    else:
+                        EdkLogger.error('Parser', FORMAT_INVALID, "PCD (%s) is not defined in DSC file" % Excpt.Pcd,
+                                    File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
+                                    Line=self._LineIndex+1)
+                else:
+                    EdkLogger.error('Parser', FORMAT_INVALID, "Invalid expression: %s" % str(Excpt),
+                                    File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
+                                    Line=self._LineIndex+1)
             except MacroException, Excpt:
                 EdkLogger.error('Parser', FORMAT_INVALID, str(Excpt),
                                 File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
@@ -1245,6 +1259,20 @@ class DscParser(MetaFileParser):
             Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
             Name = TokenSpaceGuid + '.' + PcdName
             self._Symbols[Name] = Value
+
+        Content = open(str(self.MetaFile), 'r').readlines()
+        GlobalData.gPlatformOtherPcds['DSCFILE'] = str(self.MetaFile)
+        for PcdType in (MODEL_PCD_PATCHABLE_IN_MODULE, MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_HII,
+                        MODEL_PCD_DYNAMIC_VPD, MODEL_PCD_DYNAMIC_EX_DEFAULT, MODEL_PCD_DYNAMIC_EX_HII,
+                        MODEL_PCD_DYNAMIC_EX_VPD):
+            Records = self._RawTable.Query(PcdType, BelongsToItem=-1.0)
+            for TokenSpaceGuid,PcdName,Value,Dummy2,Dummy3,ID,Line in Records:
+                Name = TokenSpaceGuid + '.' + PcdName
+                if Name not in GlobalData.gPlatformOtherPcds:
+                    PcdLine = Line
+                    while not Content[Line - 1].lstrip().startswith(TAB_SECTION_START):
+                        Line -= 1
+                    GlobalData.gPlatformOtherPcds[Name] = (CleanString(Content[Line - 1]), PcdLine, PcdType)
 
     def __ProcessDefine(self):
         if not self._Enabled:

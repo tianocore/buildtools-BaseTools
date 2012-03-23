@@ -465,7 +465,9 @@ class ValueExpression(object):
         # PCD token
         if self.PcdPattern.match(self._Token):
             if self._Token not in self._Symb:
-                raise BadExpression(ERR_PCD_RESOLVE % self._Token)
+                Ex = BadExpression(ERR_PCD_RESOLVE % self._Token)
+                Ex.Pcd = self._Token
+                raise Ex
             self._Token = ValueExpression(self._Symb[self._Token], self._Symb)(True)
             if type(self._Token) != type(''):
                 self._LiteralToken = hex(self._Token)

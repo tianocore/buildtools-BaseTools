@@ -853,7 +853,19 @@ class FdfParser:
                                 Line=Line)
                 return Excpt.result
             except Exception, Excpt:
-                raise Warning("Invalid expression", *FileLineTuple)
+                if hasattr(Excpt, 'Pcd'):
+                    if Excpt.Pcd in GlobalData.gPlatformOtherPcds:
+                        Info = GlobalData.gPlatformOtherPcds[Excpt.Pcd]
+                        raise Warning("Cannot use this PCD (%s) in an expression as"
+                                      " it must be defined in a [PcdsFixedAtBuild] or [PcdsFeatureFlag] section"
+                                      " of the DSC file (%s), and it is currently defined in this section:"
+                                      " %s, line #: %d." % (Excpt.Pcd, GlobalData.gPlatformOtherPcds['DSCFILE'], Info[0], Info[1]),
+                                      *FileLineTuple)
+                    else:
+                        raise Warning("PCD (%s) is not defined in DSC file (%s)" % (Excpt.Pcd, GlobalData.gPlatformOtherPcds['DSCFILE']),
+                                      *FileLineTuple)
+                else:
+                    raise Warning(str(Excpt), *FileLineTuple)
         else:
             if Expression.startswith('$(') and Expression[-1] == ')':
                 Expression = Expression[2:-1]            
