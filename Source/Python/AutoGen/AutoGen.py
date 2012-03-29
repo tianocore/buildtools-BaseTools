@@ -291,22 +291,24 @@ class WorkspaceAutoGen(AutoGen):
         # apply SKU and inject PCDs from Flash Definition file
         for Arch in self.ArchList:
             Platform = self.BuildDatabase[self.MetaFile, Arch, Target, Toolchain]
+
             DecPcds = set()
-            if PcdSet:
-                PGen = PlatformAutoGen(self, self.MetaFile, Target, Toolchain, Arch)
-                Pkgs = PGen.PackageList
-                for Pkg in Pkgs:
-                    for Pcd in Pkg.Pcds.keys():
-                        DecPcds.add((Pcd[0], Pcd[1]))
+            PGen = PlatformAutoGen(self, self.MetaFile, Target, Toolchain, Arch)
+            Pkgs = PGen.PackageList
+            for Pkg in Pkgs:
+                for Pcd in Pkg.Pcds.keys():
+                    DecPcds.add((Pcd[0], Pcd[1]))
+            Platform.IsPlatformPcdDeclared(DecPcds)
+
             Platform.SkuName = self.SkuId
             for Name, Guid in PcdSet:
                 if (Name, Guid) not in DecPcds:
                     EdkLogger.error(
                         'build',
-                        FORMAT_INVALID,
-                        "PCD (%s.%s) used in FDF is not declared in DEC files. FDF file: %s, line #: %d." % \
-                        (Guid, Name, self.FdfProfile.PcdFileLineDict[Name, Guid][0], self.FdfProfile.PcdFileLineDict[Name, Guid][1]),
-                        ExtraData=None
+                        PARSER_ERROR,
+                        "PCD (%s.%s) used in FDF is not declared in DEC files." % (Guid, Name),
+                        File = self.FdfProfile.PcdFileLineDict[Name, Guid][0],
+                        Line = self.FdfProfile.PcdFileLineDict[Name, Guid][1]
                     )
                 Platform.AddPcd(Name, Guid, PcdSet[Name, Guid])
 

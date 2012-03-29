@@ -842,6 +842,17 @@ class DscBuildData(PlatformBuildClassObject):
             self.Pcds[Name, Guid] = PcdClassObject(Name, Guid, '', '', '', '', '', {}, False, None)
         self.Pcds[Name, Guid].DefaultValue = Value
 
+    def IsPlatformPcdDeclared(self, DecPcds):
+        for PcdType in (MODEL_PCD_FIXED_AT_BUILD, MODEL_PCD_PATCHABLE_IN_MODULE, MODEL_PCD_FEATURE_FLAG,
+                        MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_HII, MODEL_PCD_DYNAMIC_VPD,
+                        MODEL_PCD_DYNAMIC_EX_DEFAULT, MODEL_PCD_DYNAMIC_EX_HII, MODEL_PCD_DYNAMIC_EX_VPD):
+            RecordList = self._RawData[PcdType, self._Arch]
+            for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
+                if (PcdCName, TokenSpaceGuid) not in DecPcds:
+                    EdkLogger.error('build', PARSER_ERROR,
+                                    "Pcd (%s.%s) defined in DSC is not declared in DEC files." % (TokenSpaceGuid, PcdCName),
+                                    File=self.MetaFile, Line=Dummy4)
+
     _Macros             = property(_GetMacros)
     Arch                = property(_GetArch, _SetArch)
     Platform            = property(_GetPlatformName)
