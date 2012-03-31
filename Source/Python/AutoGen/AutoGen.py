@@ -287,22 +287,23 @@ class WorkspaceAutoGen(AutoGen):
             if self.CapTargetList:
                 EdkLogger.info("No flash definition file found. Capsule [%s] will be ignored." % " ".join(self.CapTargetList))
                 self.CapTargetList = []
-        
-        # apply SKU and inject PCDs from Flash Definition file
-        for Arch in self.ArchList:
-            Platform = self.BuildDatabase[self.MetaFile, Arch, Target, Toolchain]
 
-            DecPcds = set()
+        # Collect all declared PCD to check if PCDs used in FDF and DSC are declared.
+        AllDeclaredPcd = set()
+        for Arch in self.Platform.SupArchList:
             PGen = PlatformAutoGen(self, self.MetaFile, Target, Toolchain, Arch)
             Pkgs = PGen.PackageList
             for Pkg in Pkgs:
                 for Pcd in Pkg.Pcds.keys():
-                    DecPcds.add((Pcd[0], Pcd[1]))
-            Platform.IsPlatformPcdDeclared(DecPcds)
+                    AllDeclaredPcd.add((Pcd[0], Pcd[1]))
 
+        # apply SKU and inject PCDs from Flash Definition file
+        for Arch in self.ArchList:
+            Platform = self.BuildDatabase[self.MetaFile, Arch, Target, Toolchain]
+            Platform.IsPlatformPcdDeclared(AllDeclaredPcd)
             Platform.SkuName = self.SkuId
             for Name, Guid in PcdSet:
-                if (Name, Guid) not in DecPcds:
+                if (Name, Guid) not in AllDeclaredPcd:
                     EdkLogger.error(
                         'build',
                         PARSER_ERROR,
