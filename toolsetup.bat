@@ -3,7 +3,7 @@
 @REM   however it may be executed directly from the BaseTools project folder
 @REM   if the file is not executed within a WORKSPACE\BaseTools folder.
 @REM
-@REM Copyright (c) 2006 - 2009, Intel Corporation. All rights reserved.<BR>
+@REM Copyright (c) 2006 - 2012, Intel Corporation. All rights reserved.<BR>
 @REM
 @REM This program and the accompanying materials are licensed and made available
 @REM under the terms and conditions of the BSD Licensewhich accompanies this 
@@ -291,16 +291,24 @@ goto end
   echo.
 
   if defined VCINSTALLDIR goto VisualStudioAvailable
-  if defined VS71COMNTOOLS (
-    call "%VS71COMNTOOLS%\vsvars32.bat"
+  if defined VS100COMNTOOLS (
+    call "%VS100COMNTOOLS%\vsvars32.bat"
   ) else (
-    if defined VS80COMNTOOLS (
-      call "%VS80COMNTOOLS%\vsvars32.bat"
+    if defined VS90COMNTOOLS (
+      call "%VS90COMNTOOLS%\vsvars32.bat"
     ) else (
-      echo.
-      echo !!! ERROR !!!! Cannot find Visual Studio, required to build C tools !!!
-      echo.
-      goto end
+      if defined VS80COMNTOOLS (
+        call "%VS80COMNTOOLS%\vsvars32.bat"
+      ) else (
+        if defined VS71COMNTOOLS (
+          call "%VS71COMNTOOLS%\vsvars32.bat"
+        ) else (
+          echo.
+          echo !!! ERROR !!!! Cannot find Visual Studio, required to build C tools !!!
+          echo.
+          goto end
+        )
+      )
     )
   )
 
