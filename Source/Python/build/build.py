@@ -60,6 +60,7 @@ gBuildCacheDir = "Conf/.cache"
 gToolsDefinition = "Conf/tools_def.txt"
 
 TemporaryTablePattern = re.compile(r'^_\d+_\d+_[a-fA-F0-9]+$')
+TmpTableDict = {}
 
 ## Check environment PATH variable to make sure the specified tool is found
 #
@@ -1450,14 +1451,13 @@ class Build():
                     if BuildTask.HasError():
                         EdkLogger.error("build", BUILD_ERROR, "Failed to build module", ExtraData=GlobalData.gBuildingModule)
 
-                                 #
-                # Drop temp tables to avoid database be locked.
+                #
+                # Save temp tables to a TmpTableDict.
                 #
                 for Key in Wa.BuildDatabase._CACHE_:
                     if Wa.BuildDatabase._CACHE_[Key]._RawData and Wa.BuildDatabase._CACHE_[Key]._RawData._Table and Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table:
                         if TemporaryTablePattern.match(Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table):
-                            Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Drop()
-                            Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table = 0
+                            TmpTableDict[Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table] = Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Cur
                 #
                 #
                 # All modules have been put in build tasks queue. Tell task scheduler
@@ -1822,6 +1822,10 @@ def Main():
         MyBuild = Build(Target, Workspace, Option)
         GlobalData.gCommandLineDefines['ARCH'] = ' '.join(MyBuild.ArchList)
         MyBuild.Launch()
+        # Drop temp tables to avoid database locked.
+        for TmpTableName in TmpTableDict:
+            SqlCommand = """drop table IF EXISTS %s""" % TmpTableName
+            TmpTableDict[TmpTableName].execute(SqlCommand)
         #MyBuild.DumpBuildData()
     except FatalError, X:
         if MyBuild != None:

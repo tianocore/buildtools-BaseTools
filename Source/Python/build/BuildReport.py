@@ -34,9 +34,11 @@ from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_WRITE_FAILURE
 from Common.BuildToolError import CODE_ERROR
 from Common.DataType import TAB_LINE_BREAK
-from Common.DataType import TAB_INF_PCD
-from Common.DataType import EDK_COMPONENT_TYPE_LIBRARY
 from Common.DataType import TAB_DEPEX
+from Common.DataType import TAB_SLASH
+from Common.DataType import TAB_SPACE_SPLIT
+from Common.DataType import TAB_BRG_PCD
+from Common.DataType import TAB_BRG_LIBRARY
 
 ## Pattern to extract contents in EDK DXS files
 gDxsDependencyPattern = re.compile(r"DEPENDENCY_START(.+)DEPENDENCY_END", re.DOTALL)
@@ -182,17 +184,24 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
 #  @param      MaxLength         The Max Length of the line
 #
 def FileLinesSplit(Content=None, MaxLength=None):
-    ContentList = Content.split(os.linesep)
+    ContentList = Content.split(TAB_LINE_BREAK)
     NewContent = ''
     NewContentList = []
     for Line in ContentList:
-        while len(Line) > MaxLength:
-            NewContentList.append(Line[:MaxLength])
-            Line = Line[MaxLength:]
+        while len(Line.rstrip()) > MaxLength:
+            LineSpaceIndex = Line.rfind(TAB_SPACE_SPLIT, 0, MaxLength)
+            LineSlashIndex = Line.rfind(TAB_SLASH, 0, MaxLength)
+            LineBreakIndex = MaxLength
+            if LineSpaceIndex > LineSlashIndex:
+                LineBreakIndex = LineSpaceIndex
+            elif LineSlashIndex > LineSpaceIndex:
+                LineBreakIndex = LineSlashIndex
+            NewContentList.append(Line[:LineBreakIndex])
+            Line = Line[LineBreakIndex:]
         if Line:
             NewContentList.append(Line)
     for NewLine in NewContentList:
-        NewContent += NewLine + os.linesep
+        NewContent += NewLine + TAB_LINE_BREAK
     return NewContent
     
     
@@ -294,7 +303,7 @@ class LibraryReport(object):
     #
     def GenerateReport(self, File):
         FileWrite(File, gSubSectionStart)
-        FileWrite(File, EDK_COMPONENT_TYPE_LIBRARY)
+        FileWrite(File, TAB_BRG_LIBRARY)
         if len(self.LibraryList) > 0:
             FileWrite(File, gSubSectionSep)
             for LibraryItem in self.LibraryList:
@@ -718,7 +727,7 @@ class PcdReport(object):
             # For module PCD sub-section
             #
             FileWrite(File, gSubSectionStart)
-            FileWrite(File, TAB_INF_PCD)
+            FileWrite(File, TAB_BRG_PCD)
             FileWrite(File, gSubSectionSep)
 
         for Key in self.AllPcds:
