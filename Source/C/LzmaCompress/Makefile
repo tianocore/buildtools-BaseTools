@@ -30,3 +30,12 @@ OBJECTS = \
 
 !INCLUDE ..\Makefiles\ms.app
 
+all: $(BIN_PATH)\LzmaF86Compress.bat
+
+$(BIN_PATH)\LzmaF86Compress.bat: LzmaF86Compress.bat
+  copy LzmaF86Compress.bat $(BIN_PATH)\LzmaF86Compress.bat /Y
+
+cleanall: localCleanall
+
+localCleanall:
+  del /f /q $(BIN_PATH)\LzmaF86Compress.bat > nul
