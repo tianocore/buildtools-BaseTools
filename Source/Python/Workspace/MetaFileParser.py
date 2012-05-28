@@ -1709,9 +1709,22 @@ class DecParser(MetaFileParser):
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        ValueRe  = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*')
         # check PCD information
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self.MetaFile, Line=self._LineIndex+1)
+        # check format of token space GUID CName
+        if not ValueRe.match(self._ValueList[0]):
+            EdkLogger.error('Parser', FORMAT_INVALID, "The format of the token space GUID CName is invalid. The correct format is '(a-zA-Z_)[a-zA-Z0-9_]*'",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self.MetaFile, Line=self._LineIndex+1)
+        # check format of PCD CName
+        if not ValueRe.match(self._ValueList[1]):
+            EdkLogger.error('Parser', FORMAT_INVALID, "The format of the PCD CName is invalid. The correct format is '(a-zA-Z_)[a-zA-Z0-9_]*'",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self.MetaFile, Line=self._LineIndex+1)
