@@ -856,6 +856,20 @@ class DscBuildData(PlatformBuildClassObject):
                 if PcdType in (MODEL_PCD_DYNAMIC_VPD, MODEL_PCD_DYNAMIC_EX_VPD):
                     if DecPcds[PcdCName, TokenSpaceGuid].DatumType == "VOID*":
                         PcdValue = AnalyzeVpdPcdData(Setting)[2]
+                        PcdMaxDatumSize = AnalyzeVpdPcdData(Setting)[1]
+                        # Check The MaxDatumSize is valid
+                        try:
+                            Value = long(PcdMaxDatumSize, 0)
+                        except ValueError:
+                            EdkLogger.error("build", FORMAT_INVALID, "PCD setting error",
+                                        File=self.MetaFile, Line=Dummy4,
+                                        ExtraData="\n\tPCD: The MaxDatumSize [%s] of %s.%s must be a hexadecimal or decimal in C language format in DSC: %s\n\t\t\n"
+                                                    % (PcdMaxDatumSize, TokenSpaceGuid, PcdCName, self.MetaFile.Path))
+                        if Value < 0x00 or Value > 0xFFFFFFFF:
+                                EdkLogger.error("build", FORMAT_INVALID, "PCD setting error",
+                                            File=self.MetaFile, Line=Dummy4,
+                                            ExtraData="\n\tPCD: The MaxDatumSize [%s] of %s.%s exceed the valid scope(0x0 - 0xFFFFFFFF) in DSC: %s\n\t\t\n"
+                                                      % (PcdMaxDatumSize, TokenSpaceGuid, PcdCName, self.MetaFile.Path)) 
                     else:
                         PcdValue = AnalyzeVpdPcdData(Setting)[1]
                 elif PcdType in (MODEL_PCD_DYNAMIC_HII, MODEL_PCD_DYNAMIC_EX_HII):

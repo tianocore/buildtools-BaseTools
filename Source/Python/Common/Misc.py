@@ -1236,12 +1236,12 @@ def AnalyzeHiiPcdData(Setting):
 
 ## AnalyzeVpdPcdData
 #
-#  Analyze the vpd pcd Value, Datum type and TokenNumber.
+#  Analyze the vpd pcd VpdOffset, MaxDatumSize and InitialValue.
 #  Used to avoid split issue while the value string contain "|" character
 #
-#  @param[in] Setting:  A String contain value/datum type/token number information;
+#  @param[in] Setting:  A String contain VpdOffset/MaxDatumSize/InitialValue information;
 #  
-#  @retval   ValueList: A List contain value, datum type and toke number. 
+#  @retval   ValueList: A List contain VpdOffset, MaxDatumSize and InitialValue. 
 #
 def AnalyzeVpdPcdData(Setting):   
     ValueList = ['', '', '']    
@@ -1269,11 +1269,26 @@ def AnalyzeVpdPcdData(Setting):
 #
 def CheckPcdDatum(Type, Value):
     if Type == "VOID*":
+        ValueRe  = re.compile(r'\s*L?\".*\"\s*$')
         if not (((Value.startswith('L"') or Value.startswith('"')) and Value.endswith('"'))
                 or (Value.startswith('{') and Value.endswith('}'))
                ):
             return False, "Invalid value [%s] of type [%s]; must be in the form of {...} for array"\
-                          ", or \"...\" for string, or L\"...\" for unicode string" % (Value, Type)
+                          ", or \"...\" for string, or L\"...\" for unicode string" % (Value, Type)        
+        elif ValueRe.match(Value):
+            # Check the chars in UnicodeString or CString is printable
+            if Value.startswith("L"):
+                Value = Value[2:-1]
+            else:
+                Value = Value[1:-1]
+            Printset = set(string.printable)
+            Printset.remove(TAB_PRINTCHAR_VT)
+            Printset.add(TAB_PRINTCHAR_BS)
+            Printset.add(TAB_PRINTCHAR_NUL)
+            if not set(Value).issubset(Printset):
+                PrintList = list(Printset)
+                PrintList.sort()
+                return False, "Invalid PCD string value of type [%s]; must be printable chars %s." % (Type, PrintList)
     elif Type == 'BOOLEAN':
         if Value not in ['TRUE', 'True', 'true', '0x1', '0x01', '1', 'FALSE', 'False', 'false', '0x0', '0x00', '0']:
             return False, "Invalid value [%s] of type [%s]; must be one of TRUE, True, true, 0x1, 0x01, 1"\
