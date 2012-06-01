@@ -1,7 +1,7 @@
 ## @file
 # This file is used to define common static strings used by INF/DEC/DSC files
 #
-# Copyright (c) 2007 - 2008, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2012, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -459,14 +459,18 @@ TAB_BRG_LIBRARY = 'Library'
 TAB_BUILD_RULE_VERSION = "build_rule_version"
 
 # section name for PCDs
-TAB_PCDS_DYNAMIC_DEFAULT = "PcdsDynamicDefault"
-TAB_PCDS_DYNAMIC_VPD = "PcdsDynamicVpd"
-TAB_PCDS_DYNAMIC_HII = "PcdsDynamicHii"
-TAB_PCDS_DYNAMICEX_DEFAULT = "PcdsDynamicExDefault"
-TAB_PCDS_DYNAMICEX_VPD = "PcdsDynamicExVpd"
-TAB_PCDS_DYNAMICEX_HII = "PcdsDynamicExHii"
+PCDS_DYNAMIC_DEFAULT = "PcdsDynamicDefault"
+PCDS_DYNAMIC_VPD = "PcdsDynamicVpd"
+PCDS_DYNAMIC_HII = "PcdsDynamicHii"
+PCDS_DYNAMICEX_DEFAULT = "PcdsDynamicExDefault"
+PCDS_DYNAMICEX_VPD = "PcdsDynamicExVpd"
+PCDS_DYNAMICEX_HII = "PcdsDynamicExHii"
 
 # Section allowed to have items after arch
 SECTIONS_HAVE_ITEM_AFTER_ARCH = [TAB_LIBRARY_CLASSES.upper(), TAB_DEPEX.upper(), TAB_USER_EXTENSIONS.upper(),
-                                 TAB_PCDS_DYNAMIC_DEFAULT.upper(), TAB_PCDS_DYNAMIC_VPD.upper(), TAB_PCDS_DYNAMIC_HII.upper(),
-                                 TAB_PCDS_DYNAMICEX_DEFAULT.upper(), TAB_PCDS_DYNAMICEX_VPD.upper(), TAB_PCDS_DYNAMICEX_HII.upper()]
+                                 PCDS_DYNAMIC_DEFAULT.upper(),
+                                 PCDS_DYNAMIC_VPD.upper(),
+                                 PCDS_DYNAMIC_HII.upper(),
+                                 PCDS_DYNAMICEX_DEFAULT.upper(),
+                                 PCDS_DYNAMICEX_VPD.upper(),
+                                 PCDS_DYNAMICEX_HII.upper()]

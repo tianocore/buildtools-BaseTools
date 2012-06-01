@@ -1,7 +1,7 @@
 ## @file
 # This file is used to parse meta files
 #
-# Copyright (c) 2008 - 2010, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2008 - 2012, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -288,15 +288,17 @@ class MetaFileParser(object):
                 self._SectionType = self.DataType[self._SectionName]
             else:
                 self._SectionType = MODEL_UNKNOWN
-                EdkLogger.warn("Parser", "Unrecognized section", File=self.MetaFile,
-                                Line=self._LineIndex + 1, ExtraData=self._CurrentLine)
+                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
+                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
+
+            # Check if the section name is valid
+            if self._SectionName not in SECTIONS_HAVE_ITEM_AFTER_ARCH and len(ItemList) > 2:
+                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
+                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
+
             # S1 is always Arch
             if len(ItemList) > 1:
                 S1 = ItemList[1].upper()
-                if self._SectionName not in SECTIONS_HAVE_ITEM_AFTER_ARCH and len(ItemList) > 2:
-                    EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
-                                    self.MetaFile, self._LineIndex + 1, self._CurrentLine)
-
             else:
                 S1 = 'COMMON'
             ArchList.add(S1)
@@ -1637,7 +1639,9 @@ class DecParser(MetaFileParser):
         ArchList = set()
         for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
             if Item == '':
-                continue
+                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR,
+                                "section name can NOT be empty or incorrectly use separator comma",
+                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
             ItemList = GetSplitValueList(Item, TAB_SPLIT)
 
             # different types of PCD are permissible in one section
@@ -1646,9 +1650,8 @@ class DecParser(MetaFileParser):
                 if self.DataType[self._SectionName] not in self._SectionType:
                     self._SectionType.append(self.DataType[self._SectionName])
             else:
-                EdkLogger.warn("Parser", "Unrecognized section", File=self.MetaFile,
-                                Line=self._LineIndex + 1, ExtraData=self._CurrentLine)
-                continue
+                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
+                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
 
             if MODEL_PCD_FEATURE_FLAG in self._SectionType and len(self._SectionType) > 1:
                 EdkLogger.error(
