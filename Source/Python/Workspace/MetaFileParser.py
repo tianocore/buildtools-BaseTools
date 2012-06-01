@@ -1637,12 +1637,13 @@ class DecParser(MetaFileParser):
         self._SectionName = ''
         self._SectionType = []
         ArchList = set()
-        for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
+        Line = self._CurrentLine.replace("%s%s" % (TAB_COMMA_SPLIT, TAB_SPACE_SPLIT), TAB_COMMA_SPLIT)
+        for Item in Line[1:-1].split(TAB_COMMA_SPLIT):
             if Item == '':
                 EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR,
                                 "section name can NOT be empty or incorrectly use separator comma",
                                 self.MetaFile, self._LineIndex + 1, self._CurrentLine)
-            ItemList = GetSplitValueList(Item, TAB_SPLIT)
+            ItemList = Item.split(TAB_SPLIT)
 
             # different types of PCD are permissible in one section
             self._SectionName = ItemList[0].upper()
