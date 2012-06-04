@@ -482,6 +482,7 @@ class InfParser(MetaFileParser):
         if hasattr(self, "_Table"):
             return
         MetaFileParser.__init__(self, FilePath, FileType, Table)
+        self.PcdsDict = {}
 
     ## Parser starter
     def Start(self):
@@ -688,6 +689,12 @@ class InfParser(MetaFileParser):
                 self._ValueList[2] = TokenList[1].replace(InfPcdValueList[0], '1', 1);
             elif InfPcdValueList[0] in ['False', 'false', 'FALSE']:
                 self._ValueList[2] = TokenList[1].replace(InfPcdValueList[0], '0', 1);
+        if (self._ValueList[0], self._ValueList[1]) not in self.PcdsDict:
+            self.PcdsDict[self._ValueList[0], self._ValueList[1]] = self._SectionType
+        elif self.PcdsDict[self._ValueList[0], self._ValueList[1]] != self._SectionType:
+            EdkLogger.error('Parser', FORMAT_INVALID, "It is not permissible to list a specified PCD in different PCD type sections.",
+                            ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<PcdCName>)",
+                            File=self.MetaFile, Line=self._LineIndex + 1)
 
     ## [depex] section parser
     @ParseMacro
