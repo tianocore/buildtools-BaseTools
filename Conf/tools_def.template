@@ -514,6 +514,32 @@ DEFINE CLANG_BIN = /usr/bin/
 #                             Required to build platforms or ACPI tables:
 #                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
 #                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   ARMGCC      -unix-   Requires:
+#                             ARM None EABI GCC 4.6.0
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   ARMLINUXGCC -unix-   Requires:
+#                             ARM Linux GNU EABI GCC 4.6.0
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   RVCT        -win-   Requires:
+#                             ARM C/C++ Compiler, 5.00
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   RVCTLINUX   -unix-   Requires:
+#                             ARM C/C++ Compiler, 5.00
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
 # * Commented out - All versions of VS2005 use the same standard install directory
 #
 ####################################################################################
