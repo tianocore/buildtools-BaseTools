@@ -1567,6 +1567,7 @@ class DecParser(MetaFileParser):
         MetaFileParser.__init__(self, FilePath, FileType, Table, -1)
         self._Comments = []
         self._Version = 0x00010005  # Only EDK2 dec file is supported
+        self._AllPCDs = [] # Only for check duplicate PCD
 
     ## Parser starter
     def Start(self):
@@ -1808,6 +1809,14 @@ class DecParser(MetaFileParser):
             ValueList[0] = '1'
         elif ValueList[0] in ['False', 'false', 'FALSE']:
             ValueList[0] = '0'
+
+        # check for duplicate PCD definition
+        if (self._Scope[0], self._ValueList[0], self._ValueList[1]) in self._AllPCDs:
+            EdkLogger.error('Parser', FORMAT_INVALID,
+                            "The same PCD name and GUID have been already defined",
+                            ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex + 1)
+        else:
+            self._AllPCDs.append((self._Scope[0], self._ValueList[0], self._ValueList[1]))
 
         self._ValueList[2] = ValueList[0].strip() + '|' + ValueList[1].strip() + '|' + ValueList[2].strip()
 
