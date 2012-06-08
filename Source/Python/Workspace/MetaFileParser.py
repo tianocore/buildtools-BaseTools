@@ -1043,12 +1043,21 @@ class DscParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
                             File=self.MetaFile, Line=self._LineIndex + 1)
+
+        # Validate the datum type of Dynamic Defaul PCD and DynamicEx Default PCD
+        ValueList = GetSplitValueList(self._ValueList[2])
+        if len(ValueList) > 1 and ValueList[1] != TAB_VOID \
+                              and self._ItemType in [MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_EX_DEFAULT]:
+            EdkLogger.error('Parser', FORMAT_INVALID, "The datum type '%s' of PCD is wrong" % ValueList[1],
+                            ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex + 1)
+
         # if value are 'True', 'true', 'TRUE' or 'False', 'false', 'FALSE', replace with integer 1 or 0.
         DscPcdValueList = GetSplitValueList(TokenList[1], TAB_VALUE_SPLIT, 1)
         if DscPcdValueList[0] in ['True', 'true', 'TRUE']:
             self._ValueList[2] = TokenList[1].replace(DscPcdValueList[0], '1', 1);
         elif DscPcdValueList[0] in ['False', 'false', 'FALSE']:
             self._ValueList[2] = TokenList[1].replace(DscPcdValueList[0], '0', 1);
+
 
     ## [components] section parser
     @ParseMacro
@@ -1441,10 +1450,11 @@ class DscParser(MetaFileParser):
     def __ProcessPcd(self):
         PcdValue = None
         ValueList = GetSplitValueList(self._ValueList[2])
+
         #
         # PCD value can be an expression
         #
-        if len(ValueList) > 1 and ValueList[1] == 'VOID*':
+        if len(ValueList) > 1 and ValueList[1] == TAB_VOID:
             PcdValue = ValueList[0]
             try:
                 ValueList[0] = ValueExpression(PcdValue, self._Macros)(True)
