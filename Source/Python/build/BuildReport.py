@@ -4,7 +4,7 @@
 # This module contains the functionality to generate build report after
 # build all target completes successfully.
 #
-# Copyright (c) 2010, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2010 - 2012, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -72,6 +72,9 @@ gGlueLibEntryPoint = re.compile(r"__EDKII_GLUE_MODULE_ENTRY_POINT__\s*=\s*(\w+)"
 ## Tags for MaxLength of line in report
 gLineMaxLength = 120
 
+## Tags for end of line in report
+gEndOfLine = "\r\n"
+
 ## Tags for section start, end and separator
 gSectionStart = ">" + "=" * (gLineMaxLength-2) + "<"
 gSectionEnd = "<" + "=" * (gLineMaxLength-2) + ">" + "\n"
@@ -128,7 +131,7 @@ gOpCodeList = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "TRUE", "FALSE", "
 def FileWrite(File, String, Wrapper=False):
     if Wrapper:
         String = textwrap.fill(String, 120)
-    File.write(String + "\r\n")
+    File.write(String + gEndOfLine)
 
 ##
 # Find all the header file that the module source directly includes.
@@ -185,6 +188,7 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
 #  @param      MaxLength         The Max Length of the line
 #
 def FileLinesSplit(Content=None, MaxLength=None):
+    Content = Content.replace(gEndOfLine, TAB_LINE_BREAK)
     ContentList = Content.split(TAB_LINE_BREAK)
     NewContent = ''
     NewContentList = []
@@ -202,7 +206,7 @@ def FileLinesSplit(Content=None, MaxLength=None):
         if Line:
             NewContentList.append(Line)
     for NewLine in NewContentList:
-        NewContent += NewLine + TAB_LINE_BREAK
+        NewContent += NewLine + gEndOfLine
     return NewContent
     
     
