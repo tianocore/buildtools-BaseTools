@@ -317,6 +317,7 @@ class WorkspaceAutoGen(AutoGen):
                     if (Name, Guid, TAB_PCDS_FIXED_AT_BUILD) in DecPcdsKey \
                         or (Name, Guid, TAB_PCDS_PATCHABLE_IN_MODULE) in DecPcdsKey \
                         or (Name, Guid, TAB_PCDS_FEATURE_FLAG) in DecPcdsKey:
+                        Platform.AddPcd(Name, Guid, PcdSet[Name, Guid])
                         continue
                     elif (Name, Guid, TAB_PCDS_DYNAMIC) in DecPcdsKey or (Name, Guid, TAB_PCDS_DYNAMIC_EX) in DecPcdsKey:
                         EdkLogger.error(
@@ -326,7 +327,6 @@ class WorkspaceAutoGen(AutoGen):
                                 File = self.FdfProfile.PcdFileLineDict[Name, Guid][0],
                                 Line = self.FdfProfile.PcdFileLineDict[Name, Guid][1]
                         )
-                Platform.AddPcd(Name, Guid, PcdSet[Name, Guid])
 
             Pa = PlatformAutoGen(self, self.MetaFile, Target, Toolchain, Arch)
             #
