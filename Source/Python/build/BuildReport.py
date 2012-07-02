@@ -188,7 +188,6 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
 #  @param      MaxLength         The Max Length of the line
 #
 def FileLinesSplit(Content=None, MaxLength=None):
-    Content = Content.replace(gEndOfLine, TAB_LINE_BREAK)
     ContentList = Content.split(TAB_LINE_BREAK)
     NewContent = ''
     NewContentList = []
@@ -206,7 +205,9 @@ def FileLinesSplit(Content=None, MaxLength=None):
         if Line:
             NewContentList.append(Line)
     for NewLine in NewContentList:
-        NewContent += NewLine + gEndOfLine
+        NewContent += NewLine + TAB_LINE_BREAK
+    
+    NewContent = NewContent.replace(TAB_LINE_BREAK, gEndOfLine).replace('\r\r\n', gEndOfLine)
     return NewContent
     
     
