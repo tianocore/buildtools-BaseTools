@@ -300,7 +300,6 @@ class WorkspaceAutoGen(AutoGen):
                 for Pcd in Pkg.Pcds:
                     DecPcds[Pcd[0], Pcd[1]] = Pkg.Pcds[Pcd]
                     DecPcdsKey.add((Pcd[0], Pcd[1], Pcd[2]))
-            Platform.IsPlatformPcdDeclared(DecPcds)
 
             Platform.SkuName = self.SkuId
             for Name, Guid in PcdSet:

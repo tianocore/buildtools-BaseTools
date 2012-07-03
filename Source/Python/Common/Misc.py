@@ -30,6 +30,7 @@ from Common import EdkLogger as EdkLogger
 from Common import GlobalData as GlobalData
 from DataType import *
 from BuildToolError import *
+from CommonDataClass.DataClass import *
 
 ## Regular expression used to find out place holders in string template
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
@@ -1175,6 +1176,113 @@ def ParseConsoleLog(Filename):
 
     Opr.close()
     Opw.close()
+
+## AnalyzeDscPcd
+#
+#  Analyze DSC PCD value, since there is no data type info in DSC
+#  This fuction is used to match functions (AnalyzePcdData, AnalyzeHiiPcdData, AnalyzeVpdPcdData) used for retrieving PCD value from database
+#  1. Feature flag: TokenSpace.PcdCName|PcdValue
+#  2. Fix and Patch:TokenSpace.PcdCName|PcdValue[|MaxSize]
+#  3. Dynamic default:
+#     TokenSpace.PcdCName|PcdValue[|VOID*[|MaxSize]]
+#     TokenSpace.PcdCName|PcdValue
+#  4. Dynamic VPD:
+#     TokenSpace.PcdCName|VpdOffset[|VpdValue]
+#     TokenSpace.PcdCName|VpdOffset[|MaxSize[|VpdValue]]
+#  5. Dynamic HII:
+#     TokenSpace.PcdCName|HiiString|VaiableGuid|VariableOffset[|HiiValue]
+#  PCD value needs to be located in such kind of string, and the PCD value might be an expression in which
+#    there might have "|" operator, also in string value.
+#
+#  @param Setting: String contain information described above with "TokenSpace.PcdCName|" stripped
+#  @param PcdType: PCD type: feature, fixed, dynamic default VPD HII
+#  @param DataType: The datum type of PCD: VOID*, UNIT, BOOL
+#  @retval:
+#    ValueList: A List contain fields described above
+#    IsValid:   True if conforming EBNF, otherwise False
+#    Index:     The index where PcdValue is in ValueList
+#
+def AnalyzeDscPcd(Setting, PcdType, DataType=''):
+    Setting = Setting.strip()
+    # There might be escaped quote in a string: \", \\\"
+    Data = Setting.replace('\\\\', '//').replace('\\\"', '\\\'')
+    # There might be '|' in string and in ( ... | ... ), replace it with '-'
+    NewStr = ''
+    InStr = False
+    Pair = 0
+    for ch in Data:
+        if ch == '"':
+            InStr = not InStr
+        elif ch == '(' and not InStr:
+            Pair += 1
+        elif ch == ')' and not InStr:
+            Pair -= 1
+        
+        if (Pair > 0 or InStr) and ch == TAB_VALUE_SPLIT:
+            NewStr += '-'
+        else:
+            NewStr += ch
+    FieldList = []
+    StartPos = 0
+    while True:
+        Pos = NewStr.find(TAB_VALUE_SPLIT, StartPos)
+        if Pos < 0:
+            FieldList.append(Setting[StartPos:].strip())
+            break
+        FieldList.append(Setting[StartPos:Pos].strip())
+        StartPos = Pos + 1
+
+    IsValid = True
+    if PcdType in (MODEL_PCD_FIXED_AT_BUILD, MODEL_PCD_PATCHABLE_IN_MODULE, MODEL_PCD_FEATURE_FLAG):
+        Value = FieldList[0]
+        Size = ''
+        if len(FieldList) > 1:
+            Size = FieldList[1]
+        if DataType == 'VOID*':
+            IsValid = (len(FieldList) <= 2)
+        else:
+            IsValid = (len(FieldList) <= 1)
+        return [Value, '', Size], IsValid, 0
+    elif PcdType in (MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_EX_DEFAULT):
+        Value = FieldList[0]
+        Size = Type = ''
+        if len(FieldList) > 1:
+            Type = FieldList[1]
+        if len(FieldList) > 2:
+            Size = FieldList[2]
+        if DataType == 'VOID*':
+            IsValid = (len(FieldList) <= 3)
+        else:
+            IsValid = (len(FieldList) <= 1)
+        return [Value, Type, Size], IsValid, 0 
+    elif PcdType in (MODEL_PCD_DYNAMIC_VPD, MODEL_PCD_DYNAMIC_EX_VPD):
+        VpdOffset = FieldList[0]
+        Value = Size = ''
+        if not DataType == 'VOID*':
+            if len(FieldList) > 1:
+                Value = FieldList[1]
+        else:
+            if len(FieldList) > 1:
+                Size = FieldList[1]
+            if len(FieldList) > 2:
+                Value = FieldList[2]
+        if DataType == 'VOID*':
+            IsValid = (len(FieldList) <= 3)
+        else:
+            IsValid = (len(FieldList) <= 2)
+        return [VpdOffset, Size, Value], IsValid, 2
+    elif PcdType in (MODEL_PCD_DYNAMIC_HII, MODEL_PCD_DYNAMIC_EX_HII):
+        HiiString = FieldList[0]
+        Guid = Offset = Value = ''
+        if len(FieldList) > 1:
+            Guid = FieldList[1]
+        if len(FieldList) > 2:
+            Offset = FieldList[2]
+        if len(FieldList) > 3:
+            Value = FieldList[3]
+        IsValid = (3 <= len(FieldList) <= 4)
+        return [HiiString, Guid, Offset, Value], IsValid, 3
+    return [], False, 0
 
 ## AnalyzePcdData
 #

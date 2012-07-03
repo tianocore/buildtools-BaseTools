@@ -25,7 +25,7 @@ import Common.GlobalData as GlobalData
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
-from Common.Misc import GuidStructureStringToGuidString, CheckPcdDatum, PathClass, AnalyzePcdData
+from Common.Misc import GuidStructureStringToGuidString, CheckPcdDatum, PathClass, AnalyzePcdData, AnalyzeDscPcd
 from Common.Expression import *
 from CommonDataClass.Exceptions import *
 
@@ -1273,15 +1273,15 @@ class DscParser(MetaFileParser):
     def __RetrievePcdValue(self):
         Records = self._RawTable.Query(MODEL_PCD_FEATURE_FLAG, BelongsToItem= -1.0)
         for TokenSpaceGuid, PcdName, Value, Dummy2, Dummy3, ID, Line in Records:
-            Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
             Name = TokenSpaceGuid + '.' + PcdName
-            self._Symbols[Name] = Value
+            ValList, Valid, Index = AnalyzeDscPcd(Value, MODEL_PCD_FEATURE_FLAG)
+            self._Symbols[Name] = ValList[Index]
 
         Records = self._RawTable.Query(MODEL_PCD_FIXED_AT_BUILD, BelongsToItem= -1.0)
         for TokenSpaceGuid, PcdName, Value, Dummy2, Dummy3, ID, Line in Records:
-            Value, DatumType, MaxDatumSize = AnalyzePcdData(Value)
             Name = TokenSpaceGuid + '.' + PcdName
-            self._Symbols[Name] = Value
+            ValList, Valid, Index = AnalyzeDscPcd(Value, MODEL_PCD_FIXED_AT_BUILD)
+            self._Symbols[Name] = ValList[Index]
 
         Content = open(str(self.MetaFile), 'r').readlines()
         GlobalData.gPlatformOtherPcds['DSCFILE'] = str(self.MetaFile)
@@ -1448,49 +1448,27 @@ class DscParser(MetaFileParser):
         self._ValueList[1] = ReplaceMacro(self._ValueList[1], self._Macros, RaiseError=True)
 
     def __ProcessPcd(self):
-        PcdValue = None
-        ValueList = GetSplitValueList(self._ValueList[2])
+        if self._ItemType not in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
+            self._ValueList[2] = ReplaceMacro(self._ValueList[2], self._Macros, RaiseError=True)
+            return
 
-        #
-        # PCD value can be an expression
-        #
-        if len(ValueList) > 1 and ValueList[1] == TAB_VOID:
-            PcdValue = ValueList[0]
-            try:
-                ValueList[0] = ValueExpression(PcdValue, self._Macros)(True)
-            except WrnExpression, Value:
-                ValueList[0] = Value.result
-            PcdValue = ValueList[0]
-        else:
-            #
-            # Int*/Boolean VPD PCD
-            # TokenSpace | PcdCName | Offset | [Value]
-            # 
-            # VOID* VPD PCD
-            # TokenSpace | PcdCName | Offset | [Size] | [Value]
-            #
-            if self._ItemType == MODEL_PCD_DYNAMIC_VPD:
-                if len(ValueList) >= 4:
-                    PcdValue = ValueList[-1]
-            else:
-                PcdValue = ValueList[-1]
-            #
-            # For the VPD PCD, there may not have PcdValue data in DSC file
-            #
-            if PcdValue:
-                try:
-                    ValueList[-1] = ValueExpression(PcdValue, self._Macros)(True)
-                except WrnExpression, Value:
-                    ValueList[-1] = Value.result
+        ValList, Valid, Index = AnalyzeDscPcd(self._ValueList[2], self._ItemType)
+        if not Valid:
+            EdkLogger.error('build', FORMAT_INVALID, "Pcd format incorrect.", File=self._FileWithError, Line=self._LineIndex+1,
+                            ExtraData="%s.%s|%s" % (self._ValueList[0], self._ValueList[1], self._ValueList[2]))
+        PcdValue = ValList[Index]
+        try:
+            ValList[Index] = ValueExpression(PcdValue, self._Macros)(True)
+        except WrnExpression, Value:
+            ValList[Index] = Value.result
 
-                if ValueList[-1] == 'True':
-                    ValueList[-1] = '1'
-                if ValueList[-1] == 'False':
-                    ValueList[-1] = '0'
-                PcdValue = ValueList[-1]
-        if PcdValue and self._ItemType in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
-            GlobalData.gPlatformPcds[TAB_SPLIT.join(self._ValueList[0:2])] = PcdValue
-        self._ValueList[2] = '|'.join(ValueList)
+        if ValList[Index] == 'True':
+            ValList[Index] = '1'
+        if ValList[Index] == 'False':
+            ValList[Index] = '0'
+
+        GlobalData.gPlatformPcds[TAB_SPLIT.join(self._ValueList[0:2])] = PcdValue
+        self._ValueList[2] = '|'.join(ValList)
 
     def __ProcessComponent(self):
         self._ValueList[0] = ReplaceMacro(self._ValueList[0], self._Macros)
