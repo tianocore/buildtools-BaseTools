@@ -1457,10 +1457,11 @@ class DscParser(MetaFileParser):
             EdkLogger.error('build', FORMAT_INVALID, "Pcd format incorrect.", File=self._FileWithError, Line=self._LineIndex+1,
                             ExtraData="%s.%s|%s" % (self._ValueList[0], self._ValueList[1], self._ValueList[2]))
         PcdValue = ValList[Index]
-        try:
-            ValList[Index] = ValueExpression(PcdValue, self._Macros)(True)
-        except WrnExpression, Value:
-            ValList[Index] = Value.result
+        if PcdValue:
+            try:
+                ValList[Index] = ValueExpression(PcdValue, self._Macros)(True)
+            except WrnExpression, Value:
+                ValList[Index] = Value.result
 
         if ValList[Index] == 'True':
             ValList[Index] = '1'

@@ -627,7 +627,7 @@ class DscBuildData(PlatformBuildClassObject):
         if not IsValid and PcdType not in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
             EdkLogger.error('build', FORMAT_INVALID, "Pcd format incorrect.", File=self.MetaFile, Line=LineNo,
                             ExtraData="%s.%s|%s" % (TokenSpaceGuid, PcdCName, Setting))
-        if PcdType not in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
+        if ValueList[Index] and PcdType not in [MODEL_PCD_FEATURE_FLAG, MODEL_PCD_FIXED_AT_BUILD]:
             try:
                 ValueList[Index] = ValueExpression(ValueList[Index], GlobalData.gPlatformPcds)(True)
             except WrnExpression, Value:
@@ -649,10 +649,11 @@ class DscBuildData(PlatformBuildClassObject):
                 ValueList[Index] = '1'
             elif ValueList[Index] == 'False':
                 ValueList[Index] = '0'
-        Valid, ErrStr = CheckPcdDatum(self._DecPcds[PcdCName, TokenSpaceGuid].DatumType, ValueList[Index])
-        if not Valid:
-            EdkLogger.error('build', FORMAT_INVALID, ErrStr, File=self.MetaFile, Line=LineNo,
-                            ExtraData="%s.%s" % (TokenSpaceGuid, PcdCName))
+        if ValueList[Index]:
+            Valid, ErrStr = CheckPcdDatum(self._DecPcds[PcdCName, TokenSpaceGuid].DatumType, ValueList[Index])
+            if not Valid:
+                EdkLogger.error('build', FORMAT_INVALID, ErrStr, File=self.MetaFile, Line=LineNo,
+                                ExtraData="%s.%s" % (TokenSpaceGuid, PcdCName))
         return ValueList
 
     ## Retrieve all PCD settings in platform
