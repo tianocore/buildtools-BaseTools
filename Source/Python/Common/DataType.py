@@ -475,4 +475,5 @@ SECTIONS_HAVE_ITEM_AFTER_ARCH = [TAB_LIBRARY_CLASSES.upper(), TAB_DEPEX.upper(),
                                  PCDS_DYNAMICEX_DEFAULT.upper(),
                                  PCDS_DYNAMICEX_VPD.upper(),
                                  PCDS_DYNAMICEX_HII.upper(),
-                                 TAB_BUILD_OPTIONS.upper()]
+                                 TAB_BUILD_OPTIONS.upper(),
+                                 TAB_INCLUDES.upper()]
