@@ -94,9 +94,9 @@ gPcdTypeMap = {
   'Dynamic'          : ('DYN',    'Dynamic'),
   'DynamicHii'       : ('DYNHII', 'Dynamic'),
   'DynamicVpd'       : ('DYNVPD', 'Dynamic'),
-  'DynamicEx'        : ('DEX',    'Dynamic'),
-  'DynamicExHii'     : ('DEXHII', 'Dynamic'),
-  'DynamicExVpd'     : ('DEXVPD', 'Dynamic'),
+  'DynamicEx'        : ('DEX',    'DynamicEx'),
+  'DynamicExHii'     : ('DEXHII', 'DynamicEx'),
+  'DynamicExVpd'     : ('DEXVPD', 'DynamicEx'),
   }
 
 ## The look up table to map module type to driver type
