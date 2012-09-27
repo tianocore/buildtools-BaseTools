@@ -923,6 +923,29 @@ public:
   }
 };
 
+class CIfrDefault2 : public CIfrObj, public CIfrOpHeader {
+private:
+  EFI_IFR_DEFAULT_2 *mDefault;
+
+public:
+  CIfrDefault2 (
+    IN UINT16             DefaultId = EFI_HII_DEFAULT_CLASS_STANDARD,
+    IN UINT8              Type      = EFI_IFR_TYPE_OTHER
+    ) : CIfrObj (EFI_IFR_DEFAULT_OP, (CHAR8 **)&mDefault, sizeof (EFI_IFR_DEFAULT_2)),
+        CIfrOpHeader (EFI_IFR_DEFAULT_OP, &mDefault->Header, sizeof (EFI_IFR_DEFAULT_2)) {
+    mDefault->Type      = Type;
+    mDefault->DefaultId = DefaultId;
+  }
+
+  VOID SetDefaultId (IN UINT16 DefaultId) {
+    mDefault->DefaultId = DefaultId;
+  }
+
+  VOID SetType (IN UINT8 Type) {
+    mDefault->Type = Type;
+  }
+};
+
 class CIfrValue : public CIfrObj, public CIfrOpHeader{
 private:
   EFI_IFR_VALUE *mValue;
