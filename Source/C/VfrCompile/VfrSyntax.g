@@ -494,6 +494,7 @@ vfrFormSetDefinition :
      UINT8       ClassGuidNum = 0;
      CIfrFormSet *FSObj = NULL;
      UINT16      C, SC;
+     CHAR8*      InsertOpcodeAddr = NULL;
   >>
   L:FormSet
   Uuid "=" guidDefinition[Guid] ","
@@ -585,7 +586,34 @@ vfrFormSetDefinition :
                                                         //
                                                         _DeclareDefaultFrameworkVarStore (GET_LINENO(E));
                                                       }
-                                                      CRT_END_OP (E); if (FSObj != NULL) delete FSObj;
+                                                      
+                                                      //
+                                                      // Declare undefined Question so that they can be used in expression.
+                                                      //
+                                                      if (gCFormPkg.HavePendingUnassigned()) {
+                                                        gCFormPkg.DeclarePendingQuestion (
+                                                                    gCVfrVarDataTypeDB,
+                                                                    mCVfrDataStorage,
+                                                                    mCVfrQuestionDB,
+                                                                    &mFormsetGuid,
+                                                                    E->getLine(),
+                                                                    &InsertOpcodeAddr
+                                                                  );
+                                                        gNeedAdjustOpcode = TRUE;
+                                                      }
+
+                                                      CRT_END_OP (E);
+
+                                                      if (gNeedAdjustOpcode) {
+                                                        gCFormPkg.AdjustDynamicInsertOpcode (
+                                                          mLastFormEndAddr,
+                                                          InsertOpcodeAddr
+                                                        );
+                                                      }
+
+                                                      if (FSObj != NULL) {
+                                                        delete FSObj;
+                                                      }
                                                     >>
   ";"
   ;
@@ -1389,23 +1417,7 @@ vfrFormDefinition :
                                                         LObj3.SetNumber (0xffff);  //add end label for UEFI, label number hardcode 0xffff
                                                       }
 
-                                                      //
-                                                      // Declare undefined Question so that they can be used in expression.
-                                                      //
-                                                      if (gCFormPkg.HavePendingUnassigned()) {
-                                                        gCFormPkg.DeclarePendingQuestion (
-                                                                    gCVfrVarDataTypeDB,
-                                                                    mCVfrDataStorage,
-                                                                    mCVfrQuestionDB,
-                                                                    &mFormsetGuid,
-                                                                    E->getLine()
-                                                                  );
-                                                      }
-
-                                                      //
-                                                      // mCVfrQuestionDB.PrintAllQuestion();
-                                                      //
-                                                      CRT_END_OP (E);
+                                                      {CIfrEnd EObj; EObj.SetLineNo (E->getLine()); mLastFormEndAddr = EObj.GetObjBinAddr (); gAdjustOpcodeOffset = EObj.GetObjBinOffset ();}
                                                     >>
   ";"
   ;
@@ -3904,6 +3916,7 @@ private:
 
   EFI_VARSTORE_INFO   mCurrQestVarInfo;
   EFI_GUID            *mOverrideClassGuid;
+  CHAR8*              mLastFormEndAddr;
 
 //
 // For framework vfr compatibility

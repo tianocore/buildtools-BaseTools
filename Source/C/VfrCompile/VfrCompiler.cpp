@@ -2,7 +2,7 @@
   
   VfrCompiler main class and main function.
 
-Copyright (c) 2004 - 2011, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2012, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -554,11 +554,50 @@ Fail:
 }
 
 VOID
+CVfrCompiler::UpdateInfoForDynamicOpcode (
+  VOID
+  )
+{
+  SIfrRecord          *pRecord;
+
+  if (!gNeedAdjustOpcode) {
+    return;
+  }
+  
+  //
+  // Base on the original offset info to update the record list.
+  //
+  if (!gCIfrRecordInfoDB.IfrAdjustDynamicOpcodeInRecords()) {
+    DebugError (NULL, 0, 1001, "Error parsing vfr file", "Can find the offset in the record.");
+  }
+
+  //
+  // Base on the opcode binary length to recalculate the offset for each opcode.
+  //
+  gCIfrRecordInfoDB.IfrAdjustOffsetForRecord();
+
+  //
+  // Base on the offset to find the binary address.
+  //
+  pRecord = gCIfrRecordInfoDB.GetRecordInfoFromOffset(gAdjustOpcodeOffset);
+  while (pRecord != NULL) {
+    pRecord->mIfrBinBuf = gCFormPkg.GetBufAddrBaseOnOffset(pRecord->mOffset);
+    if (pRecord->mIfrBinBuf == NULL) {
+      DebugError (NULL, 0, 0001, "Error parsing vfr file", " 0x%X. offset not allocated.", pRecord->mOffset);
+    }
+    pRecord = pRecord->mNext;
+  }
+}
+
+VOID
 CVfrCompiler::AdjustBin (
   VOID
   )
 {
   EFI_VFR_RETURN_CODE Status;
+
+  UpdateInfoForDynamicOpcode ();
+
   //
   // Check Binary Code consistent between Form and IfrRecord
   //

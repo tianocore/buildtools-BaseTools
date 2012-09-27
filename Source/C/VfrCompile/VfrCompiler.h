@@ -87,6 +87,7 @@ private:
 
   VOID    SET_RUN_STATUS (IN COMPILER_RUN_STATUS);
   BOOLEAN IS_RUN_STATUS (IN COMPILER_RUN_STATUS);
+  VOID    UpdateInfoForDynamicOpcode (VOID);
 
 public:
   COMPILER_RUN_STATUS RunStatus (VOID) {

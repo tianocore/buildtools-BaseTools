@@ -115,6 +115,10 @@ private:
 
   VOID                _WRITE_PKG_LINE (IN FILE *, IN UINT32 , IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
   VOID                _WRITE_PKG_END (IN FILE *, IN UINT32 , IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
+  SBufferNode *       GetBinBufferNodeForAddr (IN CHAR8 *);
+  SBufferNode *       CreateNewNode ();
+  SBufferNode *       GetNodeBefore (IN SBufferNode *);
+  EFI_VFR_RETURN_CODE InsertNodeBefore (IN SBufferNode *, IN SBufferNode *);
 
 private:
   SPendingAssign      *PendingAssignList;
@@ -145,12 +149,22 @@ public:
     IN CVfrDataStorage     &lCVfrDataStorage,
     IN CVfrQuestionDB      &lCVfrQuestionDB,
     IN EFI_GUID            *LocalFormSetGuid,
-    IN UINT32 LineNo
+    IN UINT32              LineNo,
+    OUT CHAR8              **InsertOpcodeAddr
+    );
+  EFI_VFR_RETURN_CODE AdjustDynamicInsertOpcode (
+    IN CHAR8              *LastFormEndAddr,
+    IN CHAR8              *InsertOpcodeAddr
+    );
+  CHAR8 *             GetBufAddrBaseOnOffset (
+    IN UINT32             Offset
     );
 };
 
 extern CFormPkg       gCFormPkg;
 extern CVfrStringDB   gCVfrStringDB;
+extern UINT32         gAdjustOpcodeOffset;
+extern BOOLEAN        gNeedAdjustOpcode;
 
 struct SIfrRecord {
   UINT32     mLineNo;
@@ -189,6 +203,10 @@ public:
     mSwitch = FALSE;
   }
 
+  SIfrRecord * GetRecordInfoFromOffset (IN UINT32);
+  VOID        IfrAdjustOffsetForRecord (VOID);
+  BOOLEAN     IfrAdjustDynamicOpcodeInRecords (VOID);
+
   UINT32      IfrRecordRegister (IN UINT32, IN CHAR8 *, IN UINT8, IN UINT32);
   VOID        IfrRecordInfoUpdate (IN UINT32, IN UINT32, IN CHAR8*, IN UINT8, IN UINT32);
   VOID        IfrRecordOutput (IN FILE *, IN UINT32 LineNo);
@@ -225,6 +243,10 @@ public:
 
   inline CHAR8 * GetObjBinAddr (VOID) {
     return mObjBinBuf;
+  }
+
+  inline UINT32 GetObjBinOffset (VOID) {
+    return mPkgOffset;
   }
 
   inline UINT8   GetObjBinLen (VOID) {
