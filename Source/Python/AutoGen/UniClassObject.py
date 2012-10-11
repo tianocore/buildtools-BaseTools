@@ -1,4 +1,4 @@
-# Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2012, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -334,10 +334,6 @@ class UniFileClassObject(object):
             Line = Line.replace(u'/language', u'#language')
             Line = Line.replace(u'/include', u'#include')
 
-            Line = Line.replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
-            Line = Line.replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
-            Line = Line.replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
-
             Line = Line.replace(u'\\\\', u'\u0006')
             Line = Line.replace(u'\\r\\n', CR + LF)
             Line = Line.replace(u'\\n', CR + LF)
@@ -345,6 +341,11 @@ class UniFileClassObject(object):
             Line = Line.replace(u'\\t', u'\t')
             Line = Line.replace(u'''\"''', u'''"''')
             Line = Line.replace(u'\t', u' ')
+
+            Line = Line.replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
+            Line = Line.replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
+            Line = Line.replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
+
             Line = Line.replace(u'\u0006', u'\\')
             
 #           if Line.find(u'\\x'):
