@@ -880,7 +880,7 @@ public:
 
 class CIfrModal : public CIfrObj, public CIfrOpHeader {
 private:
-  EFI_IFR_MODAL *mModal;
+  EFI_IFR_MODAL_TAG *mModal;
 
 public:
   CIfrModal () : CIfrObj (EFI_IFR_MODAL_TAG_OP, (CHAR8 **)&mModal),
