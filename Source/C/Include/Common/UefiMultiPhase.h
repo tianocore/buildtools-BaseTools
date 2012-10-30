@@ -1,7 +1,7 @@
 /** @file
   This includes some definitions introduced in UEFI that will be used in both PEI and DXE phases.
 
-  Copyright (c) 2006 - 2008, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2006 - 2012, Intel Corporation. All rights reserved.<BR>
 
   This program and the accompanying materials are licensed and made available
   under the terms and conditions of the BSD License which accompanies this
@@ -127,7 +127,7 @@ typedef struct _EFI_CERT_BLOCK_RSA_2048_SHA256 {
    
   @param Hdr  This is the standard WIN_CERTIFICATE header, where
               wCertificateType is set to
-              WIN_CERT_TYPE_UEFI_GUID.
+              WIN_CERT_TYPE_EFI_GUID.
 
   @param CertType   This is the unique id which determines the
                     format of the CertData. In this case, the
