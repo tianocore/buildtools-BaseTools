@@ -117,9 +117,9 @@ typedef struct _WIN_CERTIFICATE {
 // WIN_CERTIFICATE_UEFI_GUID.CertData
 // 
 typedef struct _EFI_CERT_BLOCK_RSA_2048_SHA256 {
-  UINT32  HashType;
-  UINT8   PublicKey[256];
-  UINT8   Signature[256];
+  EFI_GUID  HashType;
+  UINT8     PublicKey[256];
+  UINT8     Signature[256];
 } EFI_CERT_BLOCK_RSA_2048_SHA256;
 
 
