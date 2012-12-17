@@ -922,14 +922,15 @@ private:
 
 public:
   CIfrDefault (
+    IN UINT8              Size,
     IN UINT16             DefaultId = EFI_HII_DEFAULT_CLASS_STANDARD,
     IN UINT8              Type      = EFI_IFR_TYPE_OTHER,
     IN EFI_IFR_TYPE_VALUE Value     = gZeroEfiIfrTypeValue
-    ) : CIfrObj (EFI_IFR_DEFAULT_OP, (CHAR8 **)&mDefault),
-        CIfrOpHeader (EFI_IFR_DEFAULT_OP, &mDefault->Header) {
+    ) : CIfrObj (EFI_IFR_DEFAULT_OP, (CHAR8 **)&mDefault, Size),
+        CIfrOpHeader (EFI_IFR_DEFAULT_OP, &mDefault->Header, Size) {
     mDefault->Type      = Type;
-    mDefault->Value     = Value;
     mDefault->DefaultId = DefaultId;
+    memcpy (&(mDefault->Value), &Value, Size - OFFSET_OF (EFI_IFR_DEFAULT, Value));
   }
 
   VOID SetDefaultId (IN UINT16 DefaultId) {
@@ -941,7 +942,7 @@ public:
   }
 
   VOID SetValue (IN EFI_IFR_TYPE_VALUE Value) {
-    mDefault->Value = Value;
+    memcpy (&mDefault->Value, &Value, mDefault->Header.Length - OFFSET_OF (EFI_IFR_DEFAULT, Value));
   }
 };
 

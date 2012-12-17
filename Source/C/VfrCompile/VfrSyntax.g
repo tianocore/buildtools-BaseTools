@@ -1472,6 +1472,8 @@ vfrStatementDefault :
      EFI_DEFAULT_ID        DefaultId     = EFI_HII_DEFAULT_CLASS_STANDARD;
      CHAR8                 *VarStoreName = NULL;
      EFI_VFR_VARSTORE_TYPE VarStoreType  = EFI_VFR_VARSTORE_INVALID;
+     UINT8                 Size          = 0;
+     BOOLEAN               TypeError     = FALSE;
   >>
   D:Default                                         
   (
@@ -1484,7 +1486,53 @@ vfrStatementDefault :
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
                                                           }
                                                         }
-                                                        DObj = new CIfrDefault;
+                                                        switch (_GET_CURRQEST_DATATYPE()) {
+                                                         case EFI_IFR_TYPE_NUM_SIZE_8:
+                                                           Size = 1;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_NUM_SIZE_16:
+                                                           Size = 2;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_NUM_SIZE_32:
+                                                           Size = 4;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_NUM_SIZE_64:
+                                                           Size = 8;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_DATE:
+                                                           Size = 4;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_TIME:
+                                                           Size = 3;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_REF:
+                                                           Size = 22;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_STRING:
+                                                           Size = 2;
+                                                           break;
+
+                                                         case EFI_IFR_TYPE_BOOLEAN:
+                                                           Size = 1;
+                                                           break;
+
+                                                         default:
+                                                           TypeError = TRUE;
+                                                           Size = sizeof (EFI_IFR_TYPE_VALUE);
+                                                           break;
+                                                         }
+                                                        if (TypeError) {
+                                                          _PCATCH (VFR_RETURN_FATAL_ERROR, D->getLine(), "Default data type error.");
+                                                        }
+                                                        Size += OFFSET_OF (EFI_IFR_DEFAULT, Value);
+                                                        DObj = new CIfrDefault (Size);
                                                         DObj->SetLineNo(D->getLine());
                                                         DObj->SetType (_GET_CURRQEST_DATATYPE()); 
                                                         DObj->SetValue(Val);
@@ -1991,6 +2039,7 @@ vfrStatementDate :
      CHAR8              *VarIdStr[3] = {NULL, };
      CIfrDate           DObj;
      EFI_IFR_TYPE_VALUE Val = gZeroEfiIfrTypeValue;
+     UINT8              Size = OFFSET_OF (EFI_IFR_DEFAULT, Value) + sizeof (EFI_HII_DATE);
   >>
   L:Date                                               << DObj.SetLineNo(L->getLine()); >>
   (
@@ -2027,7 +2076,7 @@ vfrStatementDate :
                                                           DObj.SetHelp (_STOSID(YH->getText()));
                                                           if (VarIdStr[0] != NULL) { delete VarIdStr[0]; } if (VarIdStr[1] != NULL) { delete VarIdStr[1]; } if (VarIdStr[2] != NULL) { delete VarIdStr[2]; }
                                                        >>
-                                                       << {CIfrDefault DefaultObj(EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_DATE, Val); DefaultObj.SetLineNo(L->getLine());} >>
+                                                       << {CIfrDefault DefaultObj(Size, EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_DATE, Val); DefaultObj.SetLineNo(L->getLine());} >>
     )
     ( vfrStatementInconsistentIf )*
   )
@@ -2452,6 +2501,7 @@ vfrStatementTime :
      CHAR8              *VarIdStr[3] = {NULL, };
      CIfrTime           TObj;
      EFI_IFR_TYPE_VALUE Val = gZeroEfiIfrTypeValue;
+     UINT8              Size = OFFSET_OF (EFI_IFR_DEFAULT, Value) + sizeof (EFI_HII_TIME);
   >>
   L:Time                                               << TObj.SetLineNo(L->getLine()); >>
   (
@@ -2488,7 +2538,7 @@ vfrStatementTime :
                                                           TObj.SetHelp (_STOSID(HH->getText()));
                                                           if (VarIdStr[0] != NULL) { delete VarIdStr[0]; } if (VarIdStr[1] != NULL) { delete VarIdStr[1]; } if (VarIdStr[2] != NULL) { delete VarIdStr[2]; }
                                                        >>
-                                                       << {CIfrDefault DefaultObj(EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_TIME, Val); DefaultObj.SetLineNo(L->getLine());} >>
+                                                       << {CIfrDefault DefaultObj(Size, EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_TIME, Val); DefaultObj.SetLineNo(L->getLine());} >>
     )
     ( vfrStatementInconsistentIf )*
   )
