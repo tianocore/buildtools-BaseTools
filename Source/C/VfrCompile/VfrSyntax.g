@@ -591,7 +591,7 @@ vfrFormSetDefinition :
                                                       // Declare undefined Question so that they can be used in expression.
                                                       //
                                                       if (gCFormPkg.HavePendingUnassigned()) {
-                                                        gCFormPkg.DeclarePendingQuestion (
+                                                        mParserStatus += gCFormPkg.DeclarePendingQuestion (
                                                                     gCVfrVarDataTypeDB,
                                                                     mCVfrDataStorage,
                                                                     mCVfrQuestionDB,

@@ -596,6 +596,10 @@ CVfrCompiler::AdjustBin (
 {
   EFI_VFR_RETURN_CODE Status;
 
+  if (!IS_RUN_STATUS(STATUS_COMPILEED)) {
+    return;
+  }
+
   UpdateInfoForDynamicOpcode ();
 
   //
