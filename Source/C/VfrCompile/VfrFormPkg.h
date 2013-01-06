@@ -2,7 +2,7 @@
   
   The definition of CFormPkg's member function
 
-Copyright (c) 2004 - 2012, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2013, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -433,6 +433,10 @@ public:
 
     return _FLAGS_ZERO (Flags) ? VFR_RETURN_SUCCESS : VFR_RETURN_FLAGS_UNSUPPORTED;
   }
+
+  VOID UpdateCIfrQuestionHeader (IN EFI_IFR_QUESTION_HEADER *Header) {
+    mHeader = Header;
+  }
 };
 
 /*
@@ -582,6 +586,10 @@ public:
 
   BOOLEAN IsNumericOpcode () {
     return IsNumeric;
+  }
+
+  VOID UpdateCIfrMinMaxStepData (IN MINMAXSTEP_DATA *MinMaxStepData) {
+    mMinMaxStepData = MinMaxStepData;
   }
 };
 
@@ -1300,7 +1308,7 @@ private:
   EFI_IFR_NUMERIC *mNumeric;
 
 public:
-  CIfrNumeric () : CIfrObj (EFI_IFR_NUMERIC_OP, (CHAR8 **)&mNumeric),
+  CIfrNumeric () : CIfrObj (EFI_IFR_NUMERIC_OP, (CHAR8 **)&mNumeric, sizeof (EFI_IFR_NUMERIC), TRUE),
                    CIfrOpHeader (EFI_IFR_NUMERIC_OP, &mNumeric->Header),
                    CIfrQuestionHeader (&mNumeric->Question),
                    CIfrMinMaxStepData (&mNumeric->data, TRUE) {
@@ -1312,6 +1320,27 @@ public:
   ~CIfrNumeric () {
     gCurrentQuestion   = NULL;
     gCurrentMinMaxData = NULL;
+  }
+
+  VOID ShrinkBinSize (IN UINT16 Size) {
+    //
+    // Update the buffer size which is truly be used later.
+    //
+    ShrinkObjBin(Size);
+    DecLength(Size);
+
+    //
+    // Allocate buffer in gCFormPkg.
+    //
+    _EMIT_PENDING_OBJ();
+
+    //
+    // Update the buffer pointer used by other class.
+    //
+    mNumeric = (EFI_IFR_NUMERIC *) GetObjBinAddr();
+    UpdateHeader (&mNumeric->Header);
+    UpdateCIfrQuestionHeader(&mNumeric->Question);
+    UpdateCIfrMinMaxStepData(&mNumeric->data);
   }
 
   EFI_VFR_RETURN_CODE SetFlags (IN UINT8 HFlags, IN UINT8 LFlags) {
@@ -1336,7 +1365,7 @@ private:
   EFI_IFR_ONE_OF *mOneOf;
 
 public:
-  CIfrOneOf () : CIfrObj (EFI_IFR_ONE_OF_OP, (CHAR8 **)&mOneOf),
+  CIfrOneOf () : CIfrObj (EFI_IFR_ONE_OF_OP, (CHAR8 **)&mOneOf, sizeof (EFI_IFR_ONE_OF), TRUE),
                  CIfrOpHeader (EFI_IFR_ONE_OF_OP, &mOneOf->Header),
                  CIfrQuestionHeader (&mOneOf->Question),
                  CIfrMinMaxStepData (&mOneOf->data) {
@@ -1364,6 +1393,27 @@ public:
       mOneOf->Flags = LFlags | EFI_IFR_DISPLAY_UINT_DEC;
     }
     return VFR_RETURN_SUCCESS;
+  }
+
+  VOID ShrinkBinSize (IN UINT16 Size) {
+    //
+    // Update the buffer size which is truly be used later.
+    //
+    ShrinkObjBin(Size);
+    DecLength(Size);
+
+    //
+    // Allocate buffer in gCFormPkg.
+    //
+    _EMIT_PENDING_OBJ();
+
+    //
+    // Update the buffer pointer used by other class.
+    //
+    mOneOf = (EFI_IFR_ONE_OF *) GetObjBinAddr();
+    UpdateHeader (&mOneOf->Header);
+    UpdateCIfrQuestionHeader(&mOneOf->Question);
+    UpdateCIfrMinMaxStepData(&mOneOf->data);
   }
 };
 
@@ -1627,12 +1677,12 @@ private:
   EFI_IFR_ONE_OF_OPTION *mOneOfOption;
 
 public:
-  CIfrOneOfOption () : CIfrObj (EFI_IFR_ONE_OF_OPTION_OP, (CHAR8 **)&mOneOfOption),
-                       CIfrOpHeader (EFI_IFR_ONE_OF_OPTION_OP, &mOneOfOption->Header) {
+  CIfrOneOfOption (UINT8 Size) : CIfrObj (EFI_IFR_ONE_OF_OPTION_OP, (CHAR8 **)&mOneOfOption, Size),
+                       CIfrOpHeader (EFI_IFR_ONE_OF_OPTION_OP, &mOneOfOption->Header, Size) {
     mOneOfOption->Flags  = 0;
     mOneOfOption->Option = EFI_STRING_ID_INVALID;
     mOneOfOption->Type   = EFI_IFR_TYPE_OTHER;
-    memset (&mOneOfOption->Value, 0, sizeof (mOneOfOption->Value));
+    memset (&mOneOfOption->Value, 0, Size - OFFSET_OF (EFI_IFR_ONE_OF_OPTION, Value));
   }
 
   VOID SetOption (IN EFI_STRING_ID Option) {
@@ -1685,7 +1735,7 @@ public:
   }
 
   VOID SetValue (IN EFI_IFR_TYPE_VALUE Value) {
-    mOneOfOption->Value = Value;
+    memcpy (&mOneOfOption->Value, &Value, mOneOfOption->Header.Length - OFFSET_OF (EFI_IFR_ONE_OF_OPTION, Value));
   }
 
   UINT8 GetFlags (VOID) {
