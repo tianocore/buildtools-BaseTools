@@ -2,7 +2,7 @@
   
   The definition of CFormPkg's member function
 
-Copyright (c) 2004 - 2012, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2013, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -805,6 +805,7 @@ CFormPkg::DeclarePendingQuestion (
   CHAR8          *NewStr;
   EFI_VFR_RETURN_CODE  ReturnCode;
   EFI_VFR_VARSTORE_TYPE VarStoreType  = EFI_VFR_VARSTORE_INVALID;
+  EFI_VARSTORE_ID       VarStoreId    = EFI_VARSTORE_ID_INVALID;
 
   //
   // Declare all questions as Numeric in DisableIf True
@@ -852,7 +853,7 @@ CFormPkg::DeclarePendingQuestion (
       //
       // Get VarStoreType
       //
-      ReturnCode = lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);
+      ReturnCode = lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId);
       if (ReturnCode == VFR_RETURN_UNDEFINED) {
         lCVfrDataStorage.DeclareBufferVarStore (
                            FName, 
@@ -862,18 +863,13 @@ CFormPkg::DeclarePendingQuestion (
                            EFI_VARSTORE_ID_INVALID,
                            FALSE
                            );
-        ReturnCode = lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);  
+        ReturnCode = lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId, LocalFormSetGuid); 
       }
       if (ReturnCode != VFR_RETURN_SUCCESS) {
         gCVfrErrorHandle.PrintMsg (pNode->mLineNo, FName, "Error", "Var Store Type is not defined");
         return ReturnCode;
       }
-      
-      ReturnCode = lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId);
-      if (ReturnCode != VFR_RETURN_SUCCESS) {
-        gCVfrErrorHandle.PrintMsg (pNode->mLineNo, FName, "Error", "Var Store Type is not defined");
-        return ReturnCode;
-      }
+      VarStoreType = lCVfrDataStorage.GetVarStoreType (Info.mVarStoreId); 
 
       if (*VarStr == '\0' && ArrayIdx != INVALID_ARRAY_INDEX) {
         ReturnCode = lCVfrDataStorage.GetNameVarStoreInfo (&Info, ArrayIdx);
@@ -883,7 +879,7 @@ CFormPkg::DeclarePendingQuestion (
         } else if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
           VarStr = pNode->mKey;
           //convert VarStr with store name to VarStr with structure name
-          ReturnCode = lCVfrDataStorage.GetBufferVarStoreDataTypeName (FName, &SName);
+          ReturnCode = lCVfrDataStorage.GetBufferVarStoreDataTypeName (Info.mVarStoreId, &SName);
           if (ReturnCode == VFR_RETURN_SUCCESS) {
             NewStr = new CHAR8[strlen (VarStr) + strlen (SName) + 1];
             NewStr[0] = '\0';
