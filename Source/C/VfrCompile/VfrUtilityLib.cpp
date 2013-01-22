@@ -2622,26 +2622,46 @@ CVfrQuestionDB::RegisterNewDateQuestion (
   CHAR8                *VarIdStr[3] = {NULL, };
   CHAR8                 Index;
 
-  if (BaseVarId == NULL) {
+  if (BaseVarId == NULL && Name == NULL) {
     return;
   }
 
-  Len = strlen (BaseVarId);
+  if (BaseVarId != NULL) {
+    Len = strlen (BaseVarId);
 
-  VarIdStr[0] = new CHAR8[Len + strlen (".Year") + 1];
-  if (VarIdStr[0] != NULL) {
-    strcpy (VarIdStr[0], BaseVarId);
-    strcat (VarIdStr[0], ".Year");
-  }
-  VarIdStr[1] = new CHAR8[Len + strlen (".Month") + 1];
-  if (VarIdStr[1] != NULL) {
-    strcpy (VarIdStr[1], BaseVarId);
-    strcat (VarIdStr[1], ".Month");
-  }
-  VarIdStr[2] = new CHAR8[Len + strlen (".Day") + 1];
-  if (VarIdStr[2] != NULL) {
-    strcpy (VarIdStr[2], BaseVarId);
-    strcat (VarIdStr[2], ".Day");
+    VarIdStr[0] = new CHAR8[Len + strlen (".Year") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], BaseVarId);
+      strcat (VarIdStr[0], ".Year");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".Month") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], BaseVarId);
+      strcat (VarIdStr[1], ".Month");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".Day") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], BaseVarId);
+      strcat (VarIdStr[2], ".Day");
+    }
+  } else {
+    Len = strlen (Name);
+
+    VarIdStr[0] = new CHAR8[Len + strlen (".Year") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], Name);
+      strcat (VarIdStr[0], ".Year");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".Month") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], Name);
+      strcat (VarIdStr[1], ".Month");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".Day") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], Name);
+      strcat (VarIdStr[2], ".Day");
+    }
   }
 
   if ((pNode[0] = new SVfrQuestionNode (Name, VarIdStr[0], DATE_YEAR_BITMASK)) == NULL) {
@@ -2770,26 +2790,46 @@ CVfrQuestionDB::RegisterNewTimeQuestion (
   CHAR8                *VarIdStr[3] = {NULL, };
   CHAR8                 Index;
 
-  if (BaseVarId == NULL) {
+  if (BaseVarId == NULL && Name == NULL) {
     return;
   }
 
-  Len = strlen (BaseVarId);
+  if (BaseVarId != NULL) {
+    Len = strlen (BaseVarId);
 
-  VarIdStr[0] = new CHAR8[Len + strlen (".Hour") + 1];
-  if (VarIdStr[0] != NULL) {
-    strcpy (VarIdStr[0], BaseVarId);
-    strcat (VarIdStr[0], ".Hour");
-  }
-  VarIdStr[1] = new CHAR8[Len + strlen (".Minute") + 1];
-  if (VarIdStr[1] != NULL) {
-    strcpy (VarIdStr[1], BaseVarId);
-    strcat (VarIdStr[1], ".Minute");
-  }
-  VarIdStr[2] = new CHAR8[Len + strlen (".Second") + 1];
-  if (VarIdStr[2] != NULL) {
-    strcpy (VarIdStr[2], BaseVarId);
-    strcat (VarIdStr[2], ".Second");
+    VarIdStr[0] = new CHAR8[Len + strlen (".Hour") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], BaseVarId);
+      strcat (VarIdStr[0], ".Hour");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".Minute") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], BaseVarId);
+      strcat (VarIdStr[1], ".Minute");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".Second") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], BaseVarId);
+      strcat (VarIdStr[2], ".Second");
+    }
+  } else {
+    Len = strlen (Name);
+
+    VarIdStr[0] = new CHAR8[Len + strlen (".Hour") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], Name);
+      strcat (VarIdStr[0], ".Hour");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".Minute") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], Name);
+      strcat (VarIdStr[1], ".Minute");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".Second") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], Name);
+      strcat (VarIdStr[2], ".Second");
+    }
   }
 
   if ((pNode[0] = new SVfrQuestionNode (Name, VarIdStr[0], TIME_HOUR_BITMASK)) == NULL) {
@@ -2858,31 +2898,56 @@ CVfrQuestionDB::RegisterRefQuestion (
   CHAR8                *VarIdStr[4] = {NULL, };
   CHAR8                 Index;
 
-  if (BaseVarId == NULL) {
+  if (BaseVarId == NULL && Name == NULL) {
     return;
   }
 
-  Len = strlen (BaseVarId);
+  if (BaseVarId != NULL) {
+    Len = strlen (BaseVarId);
 
-  VarIdStr[0] = new CHAR8[Len + strlen (".QuestionId") + 1];
-  if (VarIdStr[0] != NULL) {
-    strcpy (VarIdStr[0], BaseVarId);
-    strcat (VarIdStr[0], ".QuestionId");
-  }
-  VarIdStr[1] = new CHAR8[Len + strlen (".FormId") + 1];
-  if (VarIdStr[1] != NULL) {
-    strcpy (VarIdStr[1], BaseVarId);
-    strcat (VarIdStr[1], ".FormId");
-  }
-  VarIdStr[2] = new CHAR8[Len + strlen (".FormSetGuid") + 1];
-  if (VarIdStr[2] != NULL) {
-    strcpy (VarIdStr[2], BaseVarId);
-    strcat (VarIdStr[2], ".FormSetGuid");
-  }
-  VarIdStr[3] = new CHAR8[Len + strlen (".DevicePath") + 1];
-  if (VarIdStr[3] != NULL) {
-    strcpy (VarIdStr[3], BaseVarId);
-    strcat (VarIdStr[3], ".DevicePath");
+    VarIdStr[0] = new CHAR8[Len + strlen (".QuestionId") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], BaseVarId);
+      strcat (VarIdStr[0], ".QuestionId");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".FormId") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], BaseVarId);
+      strcat (VarIdStr[1], ".FormId");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".FormSetGuid") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], BaseVarId);
+      strcat (VarIdStr[2], ".FormSetGuid");
+    }
+    VarIdStr[3] = new CHAR8[Len + strlen (".DevicePath") + 1];
+    if (VarIdStr[3] != NULL) {
+      strcpy (VarIdStr[3], BaseVarId);
+      strcat (VarIdStr[3], ".DevicePath");
+    }
+  } else {
+    Len = strlen (Name);
+
+    VarIdStr[0] = new CHAR8[Len + strlen (".QuestionId") + 1];
+    if (VarIdStr[0] != NULL) {
+      strcpy (VarIdStr[0], Name);
+      strcat (VarIdStr[0], ".QuestionId");
+    }
+    VarIdStr[1] = new CHAR8[Len + strlen (".FormId") + 1];
+    if (VarIdStr[1] != NULL) {
+      strcpy (VarIdStr[1], Name);
+      strcat (VarIdStr[1], ".FormId");
+    }
+    VarIdStr[2] = new CHAR8[Len + strlen (".FormSetGuid") + 1];
+    if (VarIdStr[2] != NULL) {
+      strcpy (VarIdStr[2], Name);
+      strcat (VarIdStr[2], ".FormSetGuid");
+    }
+    VarIdStr[3] = new CHAR8[Len + strlen (".DevicePath") + 1];
+    if (VarIdStr[3] != NULL) {
+      strcpy (VarIdStr[3], Name);
+      strcat (VarIdStr[3], ".DevicePath");
+    }
   }
 
   if ((pNode[0] = new SVfrQuestionNode (Name, VarIdStr[0])) == NULL) {
