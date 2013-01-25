@@ -2503,16 +2503,16 @@ class FdfParser:
         self.__GetFileOpts( FfsFileObj)
 
         if not self.__IsToken("{"):
-#            if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
-#                if self.__FileCouldHaveRelocFlag(FfsFileObj.FvFileType):
-#                    if self.__Token == 'RELOCS_STRIPPED':
-#                        FfsFileObj.KeepReloc = False
-#                    else:
-#                        FfsFileObj.KeepReloc = True
-#                else:
-#                    raise Warning("File type %s could not have reloc strip flag%d" % (FfsFileObj.FvFileType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
-#
-#            if not self.__IsToken("{"):
+            if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
+                if self.__FileCouldHaveRelocFlag(FfsFileObj.FvFileType):
+                    if self.__Token == 'RELOCS_STRIPPED':
+                        FfsFileObj.KeepReloc = False
+                    else:
+                        FfsFileObj.KeepReloc = True
+                else:
+                    raise Warning("File type %s could not have reloc strip flag%d" % (FfsFileObj.FvFileType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
+
+            if not self.__IsToken("{"):
                 raise Warning("expected '{'", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
