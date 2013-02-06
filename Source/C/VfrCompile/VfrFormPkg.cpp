@@ -803,6 +803,7 @@ CFormPkg::DeclarePendingQuestion (
   CHAR8          FName[MAX_NAME_LEN];
   CHAR8          *SName;
   CHAR8          *NewStr;
+  UINT32         ShrinkSize;
   EFI_VFR_RETURN_CODE  ReturnCode;
   EFI_VFR_VARSTORE_TYPE VarStoreType  = EFI_VFR_VARSTORE_INVALID;
   EFI_VARSTORE_ID       VarStoreId    = EFI_VARSTORE_ID_INVALID;
@@ -823,7 +824,7 @@ CFormPkg::DeclarePendingQuestion (
     if (pNode->mFlag == PENDING) {
       CIfrNumeric CNObj;
       EFI_VARSTORE_INFO Info; 
-  	  EFI_QUESTION_ID   QId   = EFI_QUESTION_ID_INVALID;
+      EFI_QUESTION_ID   QId   = EFI_QUESTION_ID_INVALID;
 
       CNObj.SetLineNo (LineNo);
       CNObj.SetPrompt (0x0);
@@ -913,19 +914,24 @@ CFormPkg::DeclarePendingQuestion (
       switch (Info.mVarType) {
       case EFI_IFR_TYPE_NUM_SIZE_64:
         CNObj.SetMinMaxStepData ((UINT64) 0, (UINT64) -1 , (UINT64) 0);
+        ShrinkSize = 0;
         break;
       case EFI_IFR_TYPE_NUM_SIZE_32:
         CNObj.SetMinMaxStepData ((UINT32) 0, (UINT32) -1 , (UINT32) 0);
+        ShrinkSize = 12;
         break;
       case EFI_IFR_TYPE_NUM_SIZE_16:
         CNObj.SetMinMaxStepData ((UINT16) 0, (UINT16) -1 , (UINT16) 0);
+        ShrinkSize = 18;
         break;
       case EFI_IFR_TYPE_NUM_SIZE_8:
         CNObj.SetMinMaxStepData ((UINT8) 0, (UINT8) -1 , (UINT8) 0);
+        ShrinkSize = 21;
         break;
       default:
         break;
       }
+      CNObj.ShrinkBinSize (ShrinkSize);
 
       //
       // For undefined Efi VarStore type question
@@ -935,7 +941,7 @@ CFormPkg::DeclarePendingQuestion (
         CIfrVarEqName CVNObj (QId, Info.mInfo.mVarName);
         CVNObj.SetLineNo (LineNo);
       }
-      
+
       //
       // End for Numeric
       //
@@ -1236,6 +1242,18 @@ CIfrRecordInfoDB::GetRecordInfoFromOffset (
   return pNode;
 }
 
+/*
+  Add just the op code position.
+
+  From
+  
+  | form end opcode + end of if opcode for form ... + Dynamic opcode + form set end opcode |
+  
+  To
+  
+  | Dynamic opcode + form end opcode + end of if opcode for form ... + form set end opcode |
+
+*/
 BOOLEAN
 CIfrRecordInfoDB::IfrAdjustDynamicOpcodeInRecords (
   VOID

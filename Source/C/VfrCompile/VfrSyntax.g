@@ -604,6 +604,10 @@ vfrFormSetDefinition :
 
                                                       CRT_END_OP (E);
 
+                                                      //
+                                                      // Adjust the pending question position.
+                                                      // Move the position from current to before the end of the last form in the form set.
+                                                      //
                                                       if (gNeedAdjustOpcode) {
                                                         gCFormPkg.AdjustDynamicInsertOpcode (
                                                           mLastFormEndAddr,
