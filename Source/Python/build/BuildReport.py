@@ -699,7 +699,8 @@ class PcdReport(object):
         # Collect PCDs defined in DSC common section
         #
         self.DscPcdDefault = {}
-        for Platform in Wa.BuildDatabase.WorkspaceDb.PlatformList:
+        for Arch in Wa.ArchList:
+            Platform = Wa.BuildDatabase[Wa.MetaFile, Arch, Wa.BuildTarget, Wa.ToolChain]
             for (TokenCName, TokenSpaceGuidCName) in Platform.Pcds:
                 DscDefaultValue = Platform.Pcds[(TokenCName, TokenSpaceGuidCName)].DefaultValue
                 if DscDefaultValue:

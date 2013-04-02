@@ -364,6 +364,7 @@ class GenFdsGlobalVariable:
             for SecAlign in InputAlign:
                 Cmd += ["--sectionalign", SecAlign]
 
+        CommandFile = Output + '.txt'
         if Ui not in [None, '']:
             #Cmd += ["-n", '"' + Ui + '"']
             SectionData = array.array('B', [0,0,0,0])
@@ -378,12 +379,16 @@ class GenFdsGlobalVariable:
             if BuildNumber:
                 Cmd += ["-j", BuildNumber]
             Cmd += ["-o", Output]
+
+            SaveFileOnChange(CommandFile, ' '.join(Cmd), False)
+            if not GenFdsGlobalVariable.NeedsUpdate(Output, list(Input) + [CommandFile]):
+                return
+
             GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate section")
         else:
             Cmd += ["-o", Output]
             Cmd += Input
 
-            CommandFile = Output + '.txt'
             SaveFileOnChange(CommandFile, ' '.join(Cmd), False)
             if not GenFdsGlobalVariable.NeedsUpdate(Output, list(Input) + [CommandFile]):
                 return

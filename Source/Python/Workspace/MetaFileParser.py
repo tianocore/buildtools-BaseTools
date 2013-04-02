@@ -286,15 +286,15 @@ class MetaFileParser(object):
             self._SectionName = ItemList[0].upper()
             if self._SectionName in self.DataType:
                 self._SectionType = self.DataType[self._SectionName]
+                # Check if the section name is valid
+                if self._SectionName not in SECTIONS_HAVE_ITEM_AFTER_ARCH and len(ItemList) > 2:
+                    EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
+                                    self.MetaFile, self._LineIndex + 1, self._CurrentLine)
+            elif self._Version >= 0x00010005:
+                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
+                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
             else:
                 self._SectionType = MODEL_UNKNOWN
-                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
-                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
-
-            # Check if the section name is valid
-            if self._SectionName not in SECTIONS_HAVE_ITEM_AFTER_ARCH and len(ItemList) > 2:
-                EdkLogger.error("Parser", FORMAT_UNKNOWN_ERROR, "%s is not a valid section name" % Item,
-                                self.MetaFile, self._LineIndex + 1, self._CurrentLine)
 
             # S1 is always Arch
             if len(ItemList) > 1:
