@@ -38,6 +38,9 @@ LF = u'\u000A'
 NULL = u'\u0000'
 TAB = u'\t'
 BACK_SPLASH = u'\\'
+DOBULE_QUOTED_SPLASH = u'\\"'
+SIGLE_QUOTED_SPLASH = u"\\'"
+TAB_BACK_SLASH = u"\\/"
 
 gIncludePattern = re.compile("^#include +[\"<]+([^\"< >]+)[>\"]+$", re.MULTILINE | re.UNICODE)
 
@@ -346,7 +349,10 @@ class UniFileClassObject(object):
             Line = Line.replace(u'''\"''', u'''"''')
             Line = Line.replace(u'\t', u' ')
             Line = Line.replace(u'\u0006', u'\\')
-            
+            Line = Line.replace(DOBULE_QUOTED_SPLASH, u'"')
+            Line = Line.replace(SIGLE_QUOTED_SPLASH, u"'")
+            Line = Line.replace(TAB_BACK_SLASH, u"/")
+
 #           if Line.find(u'\\x'):
 #               hex = Line[Line.find(u'\\x') + 2 : Line.find(u'\\x') + 6]
 #               hex = "u'\\u" + hex + "'"
