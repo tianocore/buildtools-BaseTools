@@ -49,14 +49,20 @@ static SVFR_ERROR_HANDLE VFR_ERROR_HANDLE_TABLE [] = {
   { VFR_RETURN_CODEUNDEFINED, ": undefined Error Code" }
 };
 
+static SVFR_WARNING_HANDLE VFR_WARNING_HANDLE_TABLE [] = {
+  { VFR_WARNING_DEFAULT_VALUE_REDEFINED, ": default value re-defined with different value"},
+  { VFR_WARNING_CODEUNDEFINED, ": undefined Warning Code" }
+};
+
 CVfrErrorHandle::CVfrErrorHandle (
   VOID
   )
 {
-  mInputFileName       = NULL;
-  mScopeRecordListHead = NULL;
-  mScopeRecordListTail = NULL;
-  mVfrErrorHandleTable = VFR_ERROR_HANDLE_TABLE;
+  mInputFileName         = NULL;
+  mScopeRecordListHead   = NULL;
+  mScopeRecordListTail   = NULL;
+  mVfrErrorHandleTable   = VFR_ERROR_HANDLE_TABLE;
+  mVfrWarningHandleTable = VFR_WARNING_HANDLE_TABLE;
 }
 
 CVfrErrorHandle::~CVfrErrorHandle (
@@ -75,9 +81,18 @@ CVfrErrorHandle::~CVfrErrorHandle (
     delete pNode;
   }
 
-  mScopeRecordListHead = NULL;
-  mScopeRecordListTail = NULL;
-  mVfrErrorHandleTable = NULL;
+  mScopeRecordListHead   = NULL;
+  mScopeRecordListTail   = NULL;
+  mVfrErrorHandleTable   = NULL;
+  mVfrWarningHandleTable = NULL;
+}
+
+VOID
+CVfrErrorHandle::SetWarningAsError (
+  IN BOOLEAN  WarningAsError
+  )
+{
+  mWarningAsError = WarningAsError;
 }
 
 VOID
@@ -237,6 +252,43 @@ CVfrErrorHandle::HandleError (
   if (ErrorMsg != NULL) {
     GetFileNameLineNum (LineNum, &FileName, &FileLine);
     Error (FileName, FileLine, 0x3000, TokName, (CHAR8 *) "\t%s\n", (CHAR8 *) ErrorMsg);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+UINT8
+CVfrErrorHandle::HandleWarning (
+  IN EFI_VFR_WARNING_CODE WarningCode,
+  IN UINT32               LineNum,
+  IN CHAR8                *TokName
+  )
+{
+  UINT32                 Index;
+  CHAR8                  *FileName = NULL;
+  UINT32                 FileLine;
+  CONST CHAR8            *WarningMsg = NULL;
+
+  if (mVfrWarningHandleTable == NULL) {
+    return 1;
+  }
+
+  GetFileNameLineNum (LineNum, &FileName, &FileLine);
+
+  if (mWarningAsError) {
+    Error (FileName, FileLine, 0x2220, "warning treated as error", NULL);
+  }
+
+  for (Index = 0; mVfrWarningHandleTable[Index].mWarningCode != VFR_WARNING_CODEUNDEFINED; Index++) {
+    if (WarningCode == mVfrWarningHandleTable[Index].mWarningCode) {
+      WarningMsg = mVfrWarningHandleTable[Index].mWarningMsg;
+      break;
+    }
+  }
+
+  if (WarningMsg != NULL) {
+    Warning (FileName, FileLine, 0, TokName, (CHAR8 *) "\t%s\n", (CHAR8 *) WarningMsg);
     return 1;
   } else {
     return 0;

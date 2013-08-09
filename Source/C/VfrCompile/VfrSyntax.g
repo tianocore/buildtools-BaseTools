@@ -1108,6 +1108,7 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
      EFI_QUESTION_ID   QId       = EFI_QUESTION_ID_INVALID;
      CHAR8             *QName    = NULL;
      CHAR8             *VarIdStr = NULL;
+     mUsedDefaultCount           = 0;
   >>
   {
     Name "=" QN:StringIdentifier ","                <<
@@ -1525,6 +1526,7 @@ vfrStatementDefault :
                                                     >>
     }
                                                     <<
+                                                      CheckDuplicateDefaultValue (DefaultId, D);
                                                       if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
                                                        _PCATCH(mCVfrDataStorage.GetVarStoreName (_GET_CURRQEST_VARTINFO().mVarStoreId, &VarStoreName), D->getLine());
                                                        VarGuid = mCVfrDataStorage.GetVarStoreGuid(_GET_CURRQEST_VARTINFO().mVarStoreId);
@@ -1902,6 +1904,7 @@ vfrStatementCheckBox :
                                                           VarStoreGuid = mCVfrDataStorage.GetVarStoreGuid(_GET_CURRQEST_VARTINFO().mVarStoreId);
                                                           Val.b = TRUE;
                                                           if (CBObj.GetFlags () & 0x01) {
+                                                            CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_STANDARD, F);
                                                             _PCATCH(
                                                               mCVfrDefaultStore.BufferVarStoreAltConfigAdd (
                                                                                   EFI_HII_DEFAULT_CLASS_STANDARD,
@@ -1917,6 +1920,7 @@ vfrStatementCheckBox :
                                                               );
                                                           }
                                                           if (CBObj.GetFlags () & 0x02) {
+                                                            CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_MANUFACTURING, F);
                                                             _PCATCH(
                                                               mCVfrDefaultStore.BufferVarStoreAltConfigAdd (
                                                                                   EFI_HII_DEFAULT_CLASS_MANUFACTURING,
@@ -2915,6 +2919,7 @@ vfrStatementOneOfOption :
                                                           _PCATCH(mCVfrDataStorage.GetVarStoreName (_GET_CURRQEST_VARTINFO().mVarStoreId, &VarStoreName), L->getLine());
                                                           VarStoreGuid = mCVfrDataStorage.GetVarStoreGuid(_GET_CURRQEST_VARTINFO().mVarStoreId);
                                                           if (OOOObj.GetFlags () & 0x10) {
+                                                            CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_STANDARD, F);
                                                             _PCATCH(mCVfrDefaultStore.BufferVarStoreAltConfigAdd (
                                                                       EFI_HII_DEFAULT_CLASS_STANDARD,
                                                                        _GET_CURRQEST_VARTINFO(),
@@ -2925,6 +2930,7 @@ vfrStatementOneOfOption :
                                                                       ), L->getLine());
                                                           }
                                                           if (OOOObj.GetFlags () & 0x20) {
+                                                            CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_MANUFACTURING, F);
                                                             _PCATCH(mCVfrDefaultStore.BufferVarStoreAltConfigAdd (
                                                                       EFI_HII_DEFAULT_CLASS_MANUFACTURING,
                                                                        _GET_CURRQEST_VARTINFO(),
@@ -3998,6 +4004,12 @@ private:
   CHAR8*              mLastFormEndAddr;
 
 //
+// Whether the question already has default value.
+//
+  UINT16              mUsedDefaultArray[EFI_IFR_MAX_DEFAULT_TYPE];
+  UINT16              mUsedDefaultCount;
+
+//
 // For framework vfr compatibility
 //
   BOOLEAN             mCompatibleMode;
@@ -4011,6 +4023,7 @@ private:
   UINT8               _GET_CURRQEST_DATATYPE ();
   UINT32              _GET_CURRQEST_VARSIZE ();
   UINT32              _GET_CURRQEST_ARRAY_SIZE();
+  VOID                CheckDuplicateDefaultValue (IN EFI_DEFAULT_ID, IN ANTLRTokenPtr);
 
 public:
   VOID                _PCATCH (IN INTN, IN INTN, IN ANTLRTokenPtr, IN CONST CHAR8 *);
@@ -4870,5 +4883,26 @@ EfiVfrParser::SetCompatibleMode (IN BOOLEAN Mode)
 {
   mCompatibleMode = Mode;
   mCVfrQuestionDB.SetCompatibleMode (Mode);
+}
+
+VOID
+EfiVfrParser::CheckDuplicateDefaultValue (
+  IN EFI_DEFAULT_ID      DefaultId,
+  IN ANTLRTokenPtr       Tok
+  )
+{
+  UINT16    Index;
+
+  for(Index = 0; Index < mUsedDefaultCount; Index++) {
+    if (mUsedDefaultArray[Index] == DefaultId) {
+      gCVfrErrorHandle.HandleWarning (VFR_WARNING_DEFAULT_VALUE_REDEFINED, Tok->getLine(), Tok->getText());
+    }
+  }
+
+  if (mUsedDefaultCount >= EFI_IFR_MAX_DEFAULT_TYPE - 1) {
+    gCVfrErrorHandle.HandleError (VFR_RETURN_FATAL_ERROR, Tok->getLine(), Tok->getText());
+  }
+
+  mUsedDefaultArray[mUsedDefaultCount++] = DefaultId;
 }
 >>

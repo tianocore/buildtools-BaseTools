@@ -82,6 +82,7 @@ CVfrCompiler::OptionInitialization (
   mOptions.CPreprocessorOptions          = NULL;
   mOptions.CompatibleMode                = FALSE;
   mOptions.HasOverrideClassGuid          = FALSE;
+  mOptions.WarningAsError                = FALSE;
   memset (&mOptions.OverrideClassGuid, 0, sizeof (EFI_GUID));
   
   if (Argc == 1) {
@@ -153,6 +154,8 @@ CVfrCompiler::OptionInitialization (
         goto Fail;
       }
       mOptions.HasOverrideClassGuid = TRUE;
+    } else if (stricmp(Argv[Index], "-w") == 0 || stricmp(Argv[Index], "--warning-as-error") == 0) {
+      mOptions.WarningAsError = TRUE;
     } else {
       DebugError (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
       goto Fail;
@@ -425,6 +428,8 @@ CVfrCompiler::Usage (
     "  -g, --guid",
     "                 override class guid input",
     "                 format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "  -w  --warning-as-error",
+    "                 treat warning as an error",
     NULL
     };
   for (Index = 0; Help[Index] != NULL; Index++) {
@@ -516,6 +521,7 @@ CVfrCompiler::Compile (
   InFileName = (mOptions.SkipCPreprocessor == TRUE) ? mOptions.VfrFileName : mOptions.PreprocessorOutputFileName;
 
   gCVfrErrorHandle.SetInputFile (InFileName);
+  gCVfrErrorHandle.SetWarningAsError(mOptions.WarningAsError);
 
   if ((pInFile = fopen (InFileName, "r")) == NULL) {
     DebugError (NULL, 0, 0001, "Error opening the input file", InFileName);
@@ -802,6 +808,8 @@ main (
   )
 {
   COMPILER_RUN_STATUS  Status;
+
+  SetPrintLevel(WARNING_LOG_LEVEL);
   CVfrCompiler         Compiler(Argc, Argv);
   
   Compiler.PreProcess();

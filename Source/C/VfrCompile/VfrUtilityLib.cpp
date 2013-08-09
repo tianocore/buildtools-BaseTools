@@ -323,10 +323,6 @@ CVfrBufferConfig::Write (
       // tranverse the list to find out if there's already the value for the same offset
       for (pInfo = mItemListPos->mInfoStrList; pInfo != NULL; pInfo = pInfo->mNext) {
         if (pInfo->mOffset == Offset) {
-          // check if the value and width are the same; return error if not
-          if ((Id != NULL) && (pInfo->mWidth != Width || memcmp(pInfo->mValue, &Value, Width) != 0)) {
-            return VFR_RETURN_DEFAULT_VALUE_REDEFINED;
-          }
           return 0;
         }
       }

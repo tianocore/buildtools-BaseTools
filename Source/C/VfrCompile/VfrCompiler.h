@@ -57,6 +57,7 @@ typedef struct {
   BOOLEAN CompatibleMode;
   BOOLEAN HasOverrideClassGuid;
   EFI_GUID OverrideClassGuid;
+  BOOLEAN WarningAsError;
 } OPTIONS;
 
 typedef enum {
