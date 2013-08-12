@@ -1707,6 +1707,38 @@ class FdfParser:
 
         return False
 
+    ## __CalcRegionExpr(self)
+    #
+    #   Calculate expression for offset or size of a region
+    #
+    #   @return: None if invalid expression
+    #            Calculated number if successfully
+    #
+    def __CalcRegionExpr(self):
+        StartPos = self.GetFileBufferPos()
+        Expr = ''
+        PairCount = 0
+        while not self.__EndOfFile():
+            CurCh = self.__CurrentChar()
+            if CurCh == '(':
+                PairCount += 1
+            elif CurCh == ')':
+                PairCount -= 1
+
+            if CurCh in '|\r\n' and PairCount == 0:
+                break
+            Expr += CurCh
+            self.__GetOneChar()
+        try:
+            return long(
+                ValueExpression(Expr,
+                                dict(['%s.%s' % (Pcd[1], Pcd[0]), Val] 
+                                     for Pcd, Val in self.Profile.PcdDict.iteritems())
+                                )(True),0)
+        except Exception:
+            self.SetFileBufferPos(StartPos)
+            return None
+
     ## __GetRegionLayout() method
     #
     #   Get region layout for FD
@@ -1717,19 +1749,21 @@ class FdfParser:
     #   @retval False       Not able to find
     #
     def __GetRegionLayout(self, Fd):
-        if not self.__GetNextHexNumber():
+        Offset = self.__CalcRegionExpr() 
+        if Offset == None:
             return False
 
         RegionObj = Region.Region()
-        RegionObj.Offset = long(self.__Token, 0)
+        RegionObj.Offset = Offset
         Fd.RegionList.append(RegionObj)
 
         if not self.__IsToken( "|"):
             raise Warning("expected '|'", self.FileName, self.CurrentLineNumber)
 
-        if not self.__GetNextHexNumber():
+        Size = self.__CalcRegionExpr()
+        if Size == None:
             raise Warning("expected Region Size", self.FileName, self.CurrentLineNumber)
-        RegionObj.Size = long(self.__Token, 0)
+        RegionObj.Size = Size
 
         if not self.__GetNextWord():
             return True
