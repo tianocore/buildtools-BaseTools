@@ -2066,6 +2066,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
         # Publish the CallerId Guid
         #
         AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
+        AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED CHAR8 *gEfiCallerBaseName = "%s";\n' % Info.Name)
 
 ## Create common code for header file
 #
