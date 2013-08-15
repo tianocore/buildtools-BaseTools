@@ -2043,7 +2043,8 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
         if 'PcdLib' in Info.Module.LibraryClasses or Info.Module.Pcds:
             AutoGenH.Append("#include <Library/PcdLib.h>\n")
 
-        AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
+        AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;')
+        AutoGenH.Append('\nextern CHAR8 *gEfiCallerBaseName;\n\n')
 
         if Info.IsLibrary:
             return
