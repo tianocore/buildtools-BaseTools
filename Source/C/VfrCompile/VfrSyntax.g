@@ -1018,12 +1018,29 @@ vfrStatementVarStoreNameValue :
   <<
      EFI_GUID              Guid;
      CIfrVarStoreNameValue VSNVObj;
-     EFI_VARSTORE_ID       VarStoreId;
+     EFI_VARSTORE_ID       VarStoreId = EFI_VARSTORE_ID_INVALID;
+     BOOLEAN               Created    = FALSE;
   >>
   L:NameValueVarStore                               << VSNVObj.SetLineNo(L->getLine()); >>
-  SN:StringIdentifier ","                           << _PCATCH(mCVfrDataStorage.DeclareNameVarStoreBegin (SN->getText()), SN); >>
+  SN:StringIdentifier ","
+  {
+    VarId "=" ID:Number ","                         <<
+                                                       _PCATCH(
+                                                         (INTN)(VarStoreId = _STOU16(ID->getText())) != 0,
+                                                         (INTN)TRUE,
+                                                         ID,
+                                                         "varid 0 is not allowed."
+                                                         );
+                                                    >>
+  }
   (
-    Name "=" "STRING_TOKEN" "\(" N:Number "\)" ","  << _PCATCH(mCVfrDataStorage.NameTableAddItem (_STOSID(N->getText())), SN); >>
+    Name "=" "STRING_TOKEN" "\(" N:Number "\)" ","  << 
+                                                       if (!Created) {
+                                                         _PCATCH(mCVfrDataStorage.DeclareNameVarStoreBegin (SN->getText(), VarStoreId), SN);
+                                                         Created = TRUE;
+                                                       }
+                                                       _PCATCH(mCVfrDataStorage.NameTableAddItem (_STOSID(N->getText())), SN); 
+                                                    >>
   )+
   Uuid "=" guidDefinition[Guid]                     << _PCATCH(mCVfrDataStorage.DeclareNameVarStoreEnd (&Guid), SN); >>
                                                     <<
