@@ -136,6 +136,7 @@ VfrParserStart (
 #token MapTitle("maptitle")                     "maptitle"
 #token MapGuid("mapguid")                       "mapguid"
 #token Subtitle("subtitle")                     "subtitle"
+#token EndSubtitle("endsubtitle")               "endsubtitle"
 #token Help("help")                             "help"
 #token Text("text")                             "text"
 #token Option("option")                         "option"
@@ -1645,8 +1646,14 @@ vfrStatementSubTitle :
   {
     "," FLAGS "=" vfrSubtitleFlags[SObj]
   }
-  { vfrStatementStatTagList "," }
-  E:";"                                                << CRT_END_OP (E); >>
+  (
+    {vfrStatementStatTagList "," }
+    E:";"                                               << CRT_END_OP (E); >>
+  |
+    { "," vfrStatementStatTagList}
+    { "," (vfrStatementStat | vfrStatementQuestions)*}
+    E: EndSubtitle ";"                                  << CRT_END_OP (E); >>
+  )
   ;
 
 vfrSubtitleFlags [CIfrSubtitle & SObj] :
