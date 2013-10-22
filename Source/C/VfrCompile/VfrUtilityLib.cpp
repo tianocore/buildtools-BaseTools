@@ -2628,6 +2628,14 @@ CVfrQuestionDB::RegisterNewDateQuestion (
   CHAR8                 Index;
 
   if (BaseVarId == NULL && Name == NULL) {
+    if (QuestionId == EFI_QUESTION_ID_INVALID) {
+      QuestionId = GetFreeQuestionId ();
+    } else {
+      if (ChekQuestionIdFree (QuestionId) == FALSE) {
+        goto Err;
+      }
+      MarkQuestionIdUsed (QuestionId);
+    }
     return;
   }
 
@@ -2796,6 +2804,14 @@ CVfrQuestionDB::RegisterNewTimeQuestion (
   CHAR8                 Index;
 
   if (BaseVarId == NULL && Name == NULL) {
+    if (QuestionId == EFI_QUESTION_ID_INVALID) {
+      QuestionId = GetFreeQuestionId ();
+    } else {
+      if (ChekQuestionIdFree (QuestionId) == FALSE) {
+        goto Err;
+      }
+      MarkQuestionIdUsed (QuestionId);
+    }
     return;
   }
 
