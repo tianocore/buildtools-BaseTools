@@ -1,7 +1,7 @@
 ## @file
 # Generate AutoGen.h, AutoGen.c and *.depex files
 #
-# Copyright (c) 2007 - 2011, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2013, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -943,18 +943,6 @@ class PlatformAutoGen(AutoGen):
                     Pcd           = VpdPcdDict[PcdKey]
                     Sku           = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]
                     Sku.VpdOffset = Sku.VpdOffset.strip()                
-                    #
-                    # Fix the optional data of VPD PCD.
-                    #
-                    if (Pcd.DatumType.strip() != "VOID*"):
-                        if Sku.DefaultValue == '':
-                            Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]].DefaultValue = Pcd.MaxDatumSize
-                            Pcd.MaxDatumSize = None
-                        else:
-                            EdkLogger.error("build", AUTOGEN_ERROR, "PCD setting error",
-                                            File=self.MetaFile,
-                                            ExtraData="\n\tPCD: %s.%s format incorrect in DSC: %s\n\t\t\n"
-                                                      % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName, self.Platform.MetaFile.Path))                                                                            
                     
                     VpdFile.Add(Pcd, Sku.VpdOffset)
                     # if the offset of a VPD is *, then it need to be fixed up by third party tool.
