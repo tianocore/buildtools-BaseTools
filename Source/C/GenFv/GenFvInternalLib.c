@@ -1104,7 +1104,7 @@ Returns:
       //
       // Sanity check. The file MUST align appropriately
       //
-      if (((UINTN) *VtfFileImage + GetFfsHeaderLength(*VtfFileImage) - (UINTN) FvImage->FileImage) % (1 << CurrentFileAlignment)) {
+      if (((UINTN) *VtfFileImage + GetFfsHeaderLength((EFI_FFS_FILE_HEADER *)FileBuffer) - (UINTN) FvImage->FileImage) % (1 << CurrentFileAlignment)) {
         Error (NULL, 0, 3000, "Invalid", "VTF file cannot be aligned on a %u-byte boundary.", (unsigned) (1 << CurrentFileAlignment));
         free (FileBuffer);
         return EFI_ABORTED;
@@ -2858,7 +2858,7 @@ Returns:
     if (EFI_ERROR (Status)) {
       break;
     }
-    SubFvImageHeader = (EFI_FIRMWARE_VOLUME_HEADER *) ((UINT8 *) SubFvSection.FVImageSection + sizeof (EFI_FIRMWARE_VOLUME_IMAGE_SECTION));
+    SubFvImageHeader = (EFI_FIRMWARE_VOLUME_HEADER *) ((UINT8 *) SubFvSection.FVImageSection + GetSectionHeaderLength(SubFvSection.FVImageSection));
     //
     // Rebase on Flash
     //
