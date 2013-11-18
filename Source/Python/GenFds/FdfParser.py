@@ -2158,8 +2158,9 @@ class FdfParser:
     #   @retval None
     #
     def __GetFvAttributes(self, FvObj):
-
+        IsWordToken = False
         while self.__GetNextWord():
+            IsWordToken = True
             name = self.__Token
             if name not in ("ERASE_POLARITY", "MEMORY_MAPPED", \
                            "STICKY_WRITE", "LOCK_CAP", "LOCK_STATUS", "WRITE_ENABLED_CAP", \
@@ -2178,7 +2179,7 @@ class FdfParser:
 
             FvObj.FvAttributeDict[name] = self.__Token
 
-        return True
+        return IsWordToken
     
     ## __GetFvNameGuid() method
     #
