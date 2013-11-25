@@ -2563,22 +2563,7 @@ class FdfParser:
             FfsFileObj.CurrentLineNum = self.CurrentLineNumber
             FfsFileObj.CurrentLineContent = self.__CurrentLine()
             FfsFileObj.FileName = self.__Token
-            if FfsFileObj.FileName.replace('$(WORKSPACE)', '').find('$') == -1:
-                #
-                # For file in OUTPUT_DIRECTORY will not check whether it exist or not at AutoGen phase.
-                #
-                if not GlobalData.gAutoGenPhase:
-                    #do case sensitive check for file path
-                    ErrorCode, ErrorInfo = PathClass(NormPath(FfsFileObj.FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-                    if ErrorCode != 0:
-                        EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
-                else:
-                    if not self.__GetMacroValue("OUTPUT_DIRECTORY") in FfsFileObj.FileName:
-                        #do case sensitive check for file path
-                        ErrorCode, ErrorInfo = PathClass(NormPath(FfsFileObj.FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-                        if ErrorCode != 0:
-                            EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)                    
-
+            self.__VerifyFile(FfsFileObj.FileName)
 
         if not self.__IsToken( "}"):
             raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
@@ -2824,11 +2809,7 @@ class FdfParser:
                 if not self.__GetNextToken():
                     raise Warning("expected section file path", self.FileName, self.CurrentLineNumber)
                 DataSectionObj.SectFileName = self.__Token
-                if DataSectionObj.SectFileName.replace('$(WORKSPACE)', '').find('$') == -1:
-                    #do case sensitive check for file path
-                    ErrorCode, ErrorInfo = PathClass(NormPath(DataSectionObj.SectFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-                    if ErrorCode != 0:
-                        EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
+                self.__VerifyFile(DataSectionObj.SectFileName)
             else:
                 if not self.__GetCglSection(DataSectionObj):
                     return False
@@ -2836,6 +2817,21 @@ class FdfParser:
             Obj.SectionList.append(DataSectionObj)
 
         return True
+
+    ## __VerifyFile
+    #
+    #    Check if file exists or not:
+    #      If current phase if GenFds, the file must exist;
+    #      If current phase is AutoGen and the file is not in $(OUTPUT_DIRECTORY), the file must exist
+    #    @param FileName: File path to be verified.
+    #
+    def __VerifyFile(self, FileName):
+        if FileName.replace('$(WORKSPACE)', '').find('$') != -1:
+            return
+        if not GlobalData.gAutoGenPhase or not self.__GetMacroValue("OUTPUT_DIRECTORY") in FileName:
+            ErrorCode, ErrorInfo = PathClass(NormPath(FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
+            if ErrorCode != 0:
+                EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
 
     ## __GetCglSection() method
     #
