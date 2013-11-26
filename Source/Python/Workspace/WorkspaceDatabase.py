@@ -460,7 +460,7 @@ class DscBuildData(PlatformBuildClassObject):
                 if Record[1] in [None, '']:
                     EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID name',
                                     File=self.MetaFile, Line=Record[-1])
-                self._SkuIds[Record[1].upper()] = Record[0]
+                self._SkuIds[Record[1]] = Record[0]
             if 'DEFAULT' not in self._SkuIds:
                 self._SkuIds['DEFAULT'] = '0'
             if 'COMMON' not in self._SkuIds:
@@ -731,7 +731,6 @@ class DscBuildData(PlatformBuildClassObject):
         RecordList = self._RawData[Type, self._Arch]
         PcdValueDict = sdict()
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            SkuName = SkuName.upper()
             if SkuName in (SkuObj.SystemSkuId,'DEFAULT','COMMON'):
                 PcdSet.add((PcdCName, TokenSpaceGuid, SkuName,Dummy4))
                 PcdDict[Arch, PcdCName, TokenSpaceGuid,SkuName] = Setting
@@ -798,7 +797,6 @@ class DscBuildData(PlatformBuildClassObject):
         
         AvailableSkuIdSet.update({'DEFAULT':0,'COMMON':0})
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            SkuName = SkuName.upper()
             if SkuName not in AvailableSkuIdSet:
                 continue
             
@@ -881,7 +879,6 @@ class DscBuildData(PlatformBuildClassObject):
         
         AvailableSkuIdSet.update({'DEFAULT':0,'COMMON':0})
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            SkuName = SkuName.upper()
             if SkuName not in AvailableSkuIdSet:
                 continue
             PcdSet.add((PcdCName, TokenSpaceGuid, SkuName,Dummy4))
@@ -954,7 +951,6 @@ class DscBuildData(PlatformBuildClassObject):
         
         AvailableSkuIdSet.update({'DEFAULT':0,'COMMON':0})
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            SkuName = SkuName.upper()
             if SkuName not in AvailableSkuIdSet:
                 continue
 

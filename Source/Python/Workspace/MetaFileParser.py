@@ -278,7 +278,7 @@ class MetaFileParser(object):
         for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
             if Item == '':
                 continue
-            ItemList = GetSplitValueList(Item, TAB_SPLIT)
+            ItemList = GetSplitValueList(Item, TAB_SPLIT,2)
             # different section should not mix in one section
             if self._SectionName != '' and self._SectionName != ItemList[0].upper():
                 EdkLogger.error('Parser', FORMAT_INVALID, "Different section names in the same section",
@@ -305,7 +305,10 @@ class MetaFileParser(object):
 
             # S2 may be Platform or ModuleType
             if len(ItemList) > 2:
-                S2 = ItemList[2].upper()
+                if self._SectionName.upper() in SECTIONS_HAVE_ITEM_PCD:
+                    S2 = ItemList[2]
+                else:
+                    S2 = ItemList[2].upper()
             else:
                 S2 = 'COMMON'
             self._Scope.append([S1, S2])

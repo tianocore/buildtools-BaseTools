@@ -401,16 +401,6 @@ def CleanString2(Line, CommentCharacter=DataType.TAB_COMMENT_SPLIT, AllowCppStyl
             Comment = Line[Index:].strip()
             Line = Line[0:Index].strip()
             break
-    if Comment:
-        # Remove prefixed and trailing comment characters
-        Start = 0
-        End = len(Comment)
-        while Start < End and Comment.startswith(CommentCharacter, Start, End):
-            Start += 1
-        while End >= 0 and Comment.endswith(CommentCharacter, Start, End):
-            End -= 1
-        Comment = Comment[Start:End]
-        Comment = Comment.strip()
 
     return Line, Comment
 
