@@ -3292,7 +3292,7 @@ DEFINE GCC47_AARCH64_DLINK_FLAGS     = DEF(GCC_ARM_AARCH64_DLINK_COMMON)
 *_GCC44_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
 *_GCC44_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
 *_GCC44_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
-*_GCC44_*_APP_FLAGS                    =
+*_GCC44_*_APP_FLAGS                    = DEF(GCC_PP_FLAGS)
 *_GCC44_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
 *_GCC44_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
 
