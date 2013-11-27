@@ -3579,8 +3579,8 @@ RELEASE_GCC46_ARM_CC_FLAGS       = DEF(GCC46_ARM_CC_FLAGS) -Wno-unused-but-set-v
 *_GCC47_ARM_ASLPP_PATH           = ENV(GCC47_ARM_PREFIX)gcc
 *_GCC47_ARM_RC_PATH              = ENV(GCC47_ARM_PREFIX)objcopy
 
-*_GCC46_ARM_ARCHCC_FLAGS         = -mthumb
-*_GCC46_ARM_PLATFORM_FLAGS       = -march=armv7-a
+*_GCC47_ARM_ARCHCC_FLAGS         = -mthumb
+*_GCC47_ARM_PLATFORM_FLAGS       = -march=armv7-a
 
 *_GCC47_ARM_ASM_FLAGS            = DEF(GCC47_ARM_ASM_FLAGS)
 *_GCC47_ARM_DLINK_FLAGS          = DEF(GCC47_ARM_DLINK_FLAGS)
