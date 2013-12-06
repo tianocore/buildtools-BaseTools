@@ -801,11 +801,25 @@ def StringToArray(String):
             return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String[2:-1]])
     elif String.startswith('"'):
         if String == "\"\"":
-            return "{0x00}";
+            return "{0x00,0x00}"
         else:
-            return "{%s, 0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+            StringLen = len(String[1:-1])
+            if StringLen % 2:
+                return "{%s, 0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+            else:
+                return "{%s, 0x00,0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+    elif String.startswith('{'):
+        StringLen = len(String[1:-1])
+        if StringLen % 2:
+            return "{%s, 0x00}" % ", ".join([ C for C in String[1:-1].split(',')])
+        else:
+            return "{%s}" % ", ".join([ C for C in String[1:-1].split(',')])
+        
     else:
-        return '{%s, 0}' % ', '.join(String.split())
+        if len(String.split()) % 2:
+            return '{%s, 0}' % ', '.join(String.split())
+        else:
+            return '{%s, 0,0}' % ', '.join(String.split())
 
 def StringArrayLength(String):
     if isinstance(String, unicode):
