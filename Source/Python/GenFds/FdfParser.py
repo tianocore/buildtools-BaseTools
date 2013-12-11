@@ -1732,8 +1732,7 @@ class FdfParser:
         try:
             return long(
                 ValueExpression(Expr,
-                                dict(['%s.%s' % (Pcd[1], Pcd[0]), Val] 
-                                     for Pcd, Val in self.Profile.PcdDict.iteritems())
+                                self.__CollectMacroPcd()
                                 )(True),0)
         except Exception:
             self.SetFileBufferPos(StartPos)
@@ -1772,11 +1771,13 @@ class FdfParser:
             self.__UndoToken()
             RegionObj.PcdOffset = self.__GetNextPcdName()
             self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(Fd.BaseAddress, 0))
+            self.__PcdDict['%s.%s' % (RegionObj.PcdOffset[1], RegionObj.PcdOffset[0])] = "0x%x" % RegionObj.Offset
             FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
             self.Profile.PcdFileLineDict[RegionObj.PcdOffset] = FileLineTuple
             if self.__IsToken( "|"):
                 RegionObj.PcdSize = self.__GetNextPcdName()
                 self.Profile.PcdDict[RegionObj.PcdSize] = "0x%08X" % RegionObj.Size
+                self.__PcdDict['%s.%s' % (RegionObj.PcdSize[1], RegionObj.PcdSize[0])] = "0x%x" % RegionObj.Size
                 FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
                 self.Profile.PcdFileLineDict[RegionObj.PcdSize] = FileLineTuple
 
@@ -3063,12 +3064,14 @@ class FdfParser:
                     Value += self.__Token.strip()
             elif Name == 'OEM_CAPSULE_FLAGS':
                 Value = self.__Token.strip()
+                if not Value.upper().startswith('0X'):
+                    raise Warning("expected hex value between 0x0000 and 0xFFFF", self.FileName, self.CurrentLineNumber)
                 try:
                     Value = int(Value, 0)
                 except ValueError:
-                    raise Warning("expected integer value between 0x0000 and 0xFFFF", self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected hex value between 0x0000 and 0xFFFF", self.FileName, self.CurrentLineNumber)
                 if not 0x0000 <= Value <= 0xFFFF:
-                    raise Warning("expected integer value between 0x0000 and 0xFFFF", self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected hex value between 0x0000 and 0xFFFF", self.FileName, self.CurrentLineNumber)
                 Value = self.__Token.strip()
             else:
                 Value = self.__Token.strip()
