@@ -406,7 +406,7 @@ CVfrCompiler::Usage (
   UINT32 Index;
   CONST  CHAR8 *Help[] = {
     " ", 
-    "VfrCompile version " VFR_COMPILER_VERSION __BUILD_VERSION VFR_COMPILER_UPDATE_TIME,
+    "VfrCompile version " VFR_COMPILER_VERSION __BUILD_VERSION,
     "Copyright (c) 2004-2013 Intel Corporation. All rights reserved.",
     " ",
     "Usage: VfrCompile [options] VfrFile",
