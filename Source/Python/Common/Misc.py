@@ -1255,7 +1255,12 @@ def AnalyzeDscPcd(Setting, PcdType, DataType=''):
             Size = FieldList[2]
         else:
             if Type == 'VOID*':
-                Size = str(len(Value))
+                if Value.startswith("L"):
+                    Size = str((len(Value)- 3 + 1) * 2)
+                elif Value.startswith("{"):
+                    Size = str(len(Value.split(",")))
+                else:
+                    Size = str(len(Value) -2 + 1 )
         if DataType == 'VOID*':
             IsValid = (len(FieldList) <= 3)
         else:

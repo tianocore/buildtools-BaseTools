@@ -814,6 +814,16 @@ class DscBuildData(PlatformBuildClassObject):
             if (PcdCName,TokenSpaceGuid) in Pcds.keys(): 
                 pcdObject = Pcds[PcdCName,TokenSpaceGuid]
                 pcdObject.SkuInfoList[SkuName] = SkuInfo
+                if MaxDatumSize.strip():
+                    CurrentMaxSize = int(MaxDatumSize.strip(),0)
+                else:
+                    CurrentMaxSize = 0
+                if pcdObject.MaxDatumSize:
+                    PcdMaxSize = int(pcdObject.MaxDatumSize,0)
+                else:
+                    PcdMaxSize = 0
+                if CurrentMaxSize > PcdMaxSize:
+                    pcdObject.MaxDatumSize = str(CurrentMaxSize)
             else:               
                 Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                     PcdCName,
@@ -843,27 +853,7 @@ class DscBuildData(PlatformBuildClassObject):
                 if 'DEFAULT' in pcd.SkuInfoList.keys() and SkuObj.SystemSkuId not in pcd.SkuInfoList.keys():
                     pcd.SkuInfoList[SkuObj.SystemSkuId] = pcd.SkuInfoList['DEFAULT']
                 del(pcd.SkuInfoList['DEFAULT'])
-            
-            
-            if pcd.MaxDatumSize.strip(): 
-                MaxSize = int(pcd.MaxDatumSize,0)
-            else:
-                MaxSize = 0
-            if pcdDecObject.DatumType == 'VOID*':
-                for (skuname,skuobj) in pcd.SkuInfoList.items():
-                    if skuobj.DefaultValue.startswith("L"):
-                        datalen = len(skuobj.DefaultValue) * 2
-                    elif skuobj.DefaultValue.startswith("{"):
-                        datalen = len(skuobj.DefaultValue.split(","))
-                    else:
-                        datalen = len(skuobj.DefaultValue)
-                    if datalen>MaxSize:
-                        MaxSize = datalen
-                if MaxSize % 2:
-                    MaxSize += 1
-                pcd.MaxDatumSize = str(MaxSize)
-                    
-                
+               
         return Pcds
 
     ## Retrieve dynamic HII PCD settings
@@ -944,16 +934,15 @@ class DscBuildData(PlatformBuildClassObject):
                 MaxSize = 0
             if pcdDecObject.DatumType == 'VOID*':
                 for (skuname,skuobj) in pcd.SkuInfoList.items():
-                    if skuobj.DefaultValue.startswith("L"):
-                        datalen = len(skuobj.DefaultValue) * 2
-                    elif skuobj.DefaultValue.startswith("{"):
-                        datalen = len(skuobj.DefaultValue.split(","))
+                    datalen = 0
+                    if skuobj.HiiDefaultValue.startswith("L"):
+                        datalen = (len(skuobj.HiiDefaultValue)- 3 + 1) * 2
+                    elif skuobj.HiiDefaultValue.startswith("{"):
+                        datalen = len(skuobj.HiiDefaultValue.split(","))
                     else:
-                        datalen = len(skuobj.DefaultValue)
+                        datalen = len(skuobj.HiiDefaultValue) -2 + 1 
                     if datalen>MaxSize:
                         MaxSize = datalen
-                if MaxSize % 2:
-                    MaxSize += 1
                 pcd.MaxDatumSize = str(MaxSize)
         return Pcds
 
@@ -1001,6 +990,16 @@ class DscBuildData(PlatformBuildClassObject):
             if (PcdCName,TokenSpaceGuid) in Pcds.keys():  
                 pcdObject = Pcds[PcdCName,TokenSpaceGuid]
                 pcdObject.SkuInfoList[SkuName] = SkuInfo
+                if MaxDatumSize.strip():
+                    CurrentMaxSize = int(MaxDatumSize.strip(),0)
+                else:
+                    CurrentMaxSize = 0
+                if pcdObject.MaxDatumSize:
+                    PcdMaxSize = int(pcdObject.MaxDatumSize,0)
+                else:
+                    PcdMaxSize = 0
+                if CurrentMaxSize > PcdMaxSize:
+                    pcdObject.MaxDatumSize = str(CurrentMaxSize)
             else:
                 Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                 PcdCName,
@@ -1031,23 +1030,6 @@ class DscBuildData(PlatformBuildClassObject):
                     pcd.SkuInfoList[SkuObj.SystemSkuId] = pcd.SkuInfoList['DEFAULT']
                 del(pcd.SkuInfoList['DEFAULT'])
             
-            if pcd.MaxDatumSize.strip(): 
-                MaxSize = int(pcd.MaxDatumSize,0)
-            else:
-                MaxSize = 0
-            if pcdDecObject.DatumType == 'VOID*':
-                for (skuname,skuobj) in pcd.SkuInfoList.items():
-                    if skuobj.DefaultValue.startswith("L"):
-                        datalen = len(skuobj.DefaultValue) * 2
-                    elif skuobj.DefaultValue.startswith("{"):
-                        datalen = len(skuobj.DefaultValue.split(","))
-                    else:
-                        datalen = len(skuobj.DefaultValue)
-                    if datalen>MaxSize:
-                        MaxSize = datalen
-                if MaxSize % 2:
-                    MaxSize += 1
-                pcd.MaxDatumSize = str(MaxSize)
         return Pcds
 
     ## Add external modules

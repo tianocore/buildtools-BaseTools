@@ -809,7 +809,7 @@ def StringToArray(String):
             else:
                 return "{%s, 0x00,0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
     elif String.startswith('{'):
-        StringLen = len(String[1:-1])
+        StringLen = len(String.split(","))
         if StringLen % 2:
             return "{%s, 0x00}" % ", ".join([ C for C in String[1:-1].split(',')])
         else:
