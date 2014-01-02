@@ -3095,7 +3095,8 @@ class FdfParser:
             IsFv = self.__GetFvStatement(Obj)
             IsFd = self.__GetFdStatement(Obj)
             IsAnyFile = self.__GetAnyFileStatement(Obj)
-            if not (IsInf or IsFile or IsFv or IsFd or IsAnyFile):
+            IsAfile = self.__GetAfileStatement(Obj)
+            if not (IsInf or IsFile or IsFv or IsFd or IsAnyFile or IsAfile):
                 break
 
     ## __GetFvStatement() method
@@ -3186,6 +3187,47 @@ class FdfParser:
         CapsuleAnyFile = CapsuleData.CapsuleAnyFile()
         CapsuleAnyFile.FileName = AnyFileName
         CapsuleObj.CapsuleDataList.append(CapsuleAnyFile)
+        return True
+    
+    ## __GetAfileStatement() method
+    #
+    #   Get Afile for capsule
+    #
+    #   @param  self        The object pointer
+    #   @param  CapsuleObj  for whom Afile is got
+    #   @retval True        Successfully find a Afile statement
+    #   @retval False       Not able to find a Afile statement
+    #
+    def __GetAfileStatement(self, CapsuleObj):
+
+        if not self.__IsKeyword("APPEND"):
+            return False
+
+        if not self.__IsToken("="):
+            raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Afile name", self.FileName, self.CurrentLineNumber)
+        
+        AfileName = self.__Token
+        AfileBaseName = os.path.basename(AfileName)
+        
+        if os.path.splitext(AfileBaseName)[1]  not in [".bin",".BIN",".Bin",".dat",".DAT",".Dat",".data",".DATA",".Data"]:
+            raise Warning('invalid binary file type, should be one of "bin","BIN","Bin","dat","DAT","Dat","data","DATA","Data"', \
+                          self.FileName, self.CurrentLineNumber)
+        
+        if not os.path.isabs(AfileName):
+            AfileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(AfileName)
+            self.__VerifyFile(AfileName)
+        else:
+            if not os.path.exists(AfileName):
+                raise Warning('%s does not exist' % AfileName, self.FileName, self.CurrentLineNumber)
+            else:
+                pass
+
+        CapsuleAfile = CapsuleData.CapsuleAfile()
+        CapsuleAfile.FileName = AfileName
+        CapsuleObj.CapsuleDataList.append(CapsuleAfile)
         return True
 
     ## __GetRule() method
