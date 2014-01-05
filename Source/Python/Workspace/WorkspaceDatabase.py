@@ -36,6 +36,7 @@ from MetaFileParser import *
 from BuildClassObject import *
 from WorkspaceCommon import GetDeclaredPcd
 from Common.Misc import AnalyzeDscPcd
+import re
 
 ## Platform build information from DSC file
 #
@@ -890,6 +891,20 @@ class DscBuildData(PlatformBuildClassObject):
             if Setting == None:
                 continue
             VariableName, VariableGuid, VariableOffset, DefaultValue = self._ValidatePcd(PcdCName, TokenSpaceGuid, Setting, Type, Dummy4)
+            
+            ExceedMax = False
+            if VariableOffset.isdigit():
+                if int(VariableOffset,10) > 0xFFFF:
+                    ExceedMax = True
+            elif re.match(r'[\t\s]*0[xX][a-fA-F0-9]+$',VariableOffset):
+                if int(VariableOffset,16) > 0xFFFF:
+                    ExceedMax = True
+            else:
+                EdkLogger.error('Build', FORMAT_INVALID, "Invalid syntax or format of the variable offset value is incorrect for %s." % ".".join((TokenSpaceGuid,PcdCName)))
+            
+            if ExceedMax:
+                EdkLogger.error('Build', OPTION_VALUE_INVALID, "The variable offset value must not exceed the maximum value of 0xFFFF (UINT16) for %s." % ".".join((TokenSpaceGuid,PcdCName)))
+            
             SkuInfo = SkuInfoClass(SkuName, self.SkuIds[SkuName], VariableName, VariableGuid, VariableOffset, DefaultValue)
             if (PcdCName,TokenSpaceGuid) in Pcds.keys():  
                 pcdObject = Pcds[PcdCName,TokenSpaceGuid]
