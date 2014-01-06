@@ -1165,6 +1165,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         SkuIndexTableTmp = []
         SkuIndexTableTmp.append(0)  
         SkuIdIndex = 1  
+        VariableHeadList = []
         for SkuName in Pcd.SkuInfoList:
             Sku = Pcd.SkuInfoList[SkuName]
             SkuId = Sku.SkuId
@@ -1180,28 +1181,36 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
             if len(Sku.VariableName) > 0:
                 Pcd.TokenTypeList += ['PCD_TYPE_HII']
                 Pcd.InitString = 'INIT'
-                # store VariableName to stringTable and calculate the VariableHeadStringIndex
-                VariableNameStructure = StringToArray(Sku.VariableName)
-                if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
-                    Dict['STRING_TABLE_CNAME'].append(CName)
-                    Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
-                    if StringTableIndex == 0:
-                        Dict['STRING_TABLE_INDEX'].append('')
-                    else:
-                        Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
-                    VarNameSize = len(VariableNameStructure.replace(',',' ').split())
-                    Dict['STRING_TABLE_LENGTH'].append(VarNameSize )
-                    Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
-                    StringHeadOffsetList.append(str(StringTableSize) + 'U')
-                    VarStringDbOffsetList = []
-                    VarStringDbOffsetList.append(StringTableSize)
-                    Dict['STRING_DB_VALUE'].append(VarStringDbOffsetList)      
-                    StringTableIndex += 1
-                    StringTableSize += len(VariableNameStructure.replace(',',' ').split())
-                VariableHeadStringIndex = 0
-                for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
-                    VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
-
+                # Store all variable names of one HII PCD under different SKU to stringTable
+                # and calculate the VariableHeadStringIndex
+                if SkuIdIndex - 2 == 0:
+                    for SkuName in Pcd.SkuInfoList:
+                        SkuInfo = Pcd.SkuInfoList[SkuName]
+                        if SkuInfo.SkuId == None or SkuInfo.SkuId == '':
+                            continue
+                        VariableNameStructure = StringToArray(SkuInfo.VariableName)
+                        if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
+                            Dict['STRING_TABLE_CNAME'].append(CName)
+                            Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
+                            if StringTableIndex == 0:
+                                Dict['STRING_TABLE_INDEX'].append('')
+                            else:
+                                Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+                            VarNameSize = len(VariableNameStructure.replace(',',' ').split())
+                            Dict['STRING_TABLE_LENGTH'].append(VarNameSize )
+                            Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
+                            StringHeadOffsetList.append(str(StringTableSize) + 'U')
+                            VarStringDbOffsetList = []
+                            VarStringDbOffsetList.append(StringTableSize)
+                            Dict['STRING_DB_VALUE'].append(VarStringDbOffsetList)      
+                            StringTableIndex += 1
+                            StringTableSize += len(VariableNameStructure.replace(',',' ').split())
+                        VariableHeadStringIndex = 0
+                        for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
+                            VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
+                        VariableHeadList.append(VariableHeadStringIndex)
+                        
+                VariableHeadStringIndex = VariableHeadList[SkuIdIndex - 2]
                 # store VariableGuid to GuidTable and get the VariableHeadGuidIndex
                 VariableGuidStructure = Sku.VariableGuidValue
                 VariableGuid = GuidStructureStringToGuidValueName(VariableGuidStructure)
