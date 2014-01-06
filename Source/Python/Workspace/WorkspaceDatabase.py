@@ -640,7 +640,11 @@ class DscBuildData(PlatformBuildClassObject):
 
     def _ValidatePcd(self, PcdCName, TokenSpaceGuid, Setting, PcdType, LineNo):
         if self._DecPcds == None:
-            self._DecPcds = GetDeclaredPcd(self, self._Bdb, self._Arch, self._Target, self._Toolchain)
+            #
+            # Get all PCDs from DECs which are dependent by modules in components sections.
+            #
+            PlatformCommon = self._Bdb[self.MetaFile, 'COMMON', self._Target, self._Toolchain]
+            self._DecPcds = GetDeclaredPcd(PlatformCommon, self._Bdb, 'COMMON', self._Target, self._Toolchain)
         if (PcdCName, TokenSpaceGuid) not in self._DecPcds:
             EdkLogger.error('build', PARSER_ERROR,
                             "Pcd (%s.%s) defined in DSC is not declared in DEC files." % (TokenSpaceGuid, PcdCName),
