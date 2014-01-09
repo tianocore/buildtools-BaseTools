@@ -1,7 +1,7 @@
 ## @file
 # Generate AutoGen.h, AutoGen.c and *.depex files
 #
-# Copyright (c) 2007 - 2013, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2014, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -2084,9 +2084,14 @@ class ModuleAutoGen(AutoGen):
         if self._FixedAtBuildPcds:
             return self._FixedAtBuildPcds
         for Pcd in self.ModulePcdList:
-            if Pcd.Type == "FixedAtBuild":
-                if Pcd not in self._FixedAtBuildPcds:
-                    self._FixedAtBuildPcds.append(Pcd)
+            if self.IsLibrary:
+                if not (Pcd.Pending == False and Pcd.Type == "FixedAtBuild"):
+                    continue
+            elif Pcd.Type != "FixedAtBuild":
+                continue
+            if Pcd not in self._FixedAtBuildPcds:
+                self._FixedAtBuildPcds.append(Pcd)
+                
         return self._FixedAtBuildPcds        
 
     # Macros could be used in build_rule.txt (also Makefile)
