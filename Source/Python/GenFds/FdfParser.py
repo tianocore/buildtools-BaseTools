@@ -1,7 +1,7 @@
 ## @file
 # parse FDF file
 #
-#  Copyright (c) 2007 - 2013, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2007 - 2014, Intel Corporation. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -77,6 +77,7 @@ SEPERATOR_TUPLE = ('=', '|', ',', '{', '}')
 
 RegionSizePattern = re.compile("\s*(?P<base>(?:0x|0X)?[a-fA-F0-9]+)\s*\|\s*(?P<size>(?:0x|0X)?[a-fA-F0-9]+)\s*")
 RegionSizeGuidPattern = re.compile("\s*(?P<base>\w+\.\w+)\s*\|\s*(?P<size>\w+\.\w+)\s*")
+RegionOffsetPcdPattern = re.compile("\s*(?P<base>\w+\.\w+)\s*$")
 ShortcutPcdPattern = re.compile("\s*\w+\s*=\s*(?P<value>(?:0x|0X)?[a-fA-F0-9]+)\s*\|\s*(?P<name>\w+\.\w+)\s*")
 
 IncludeFileList = []
@@ -1768,18 +1769,26 @@ class FdfParser:
             return True
 
         if not self.__Token in ("SET", "FV", "FILE", "DATA", "CAPSULE"):
+            #
+            # If next token is a word which is not a valid FV type, it might be part of [PcdOffset[|PcdSize]]
+            # Or it might be next region's offset described by an expression which starts with a PCD.
+            #    PcdOffset[|PcdSize] or OffsetPcdExpression|Size
+            #
             self.__UndoToken()
-            RegionObj.PcdOffset = self.__GetNextPcdName()
-            self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(Fd.BaseAddress, 0))
-            self.__PcdDict['%s.%s' % (RegionObj.PcdOffset[1], RegionObj.PcdOffset[0])] = "0x%x" % RegionObj.Offset
-            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
-            self.Profile.PcdFileLineDict[RegionObj.PcdOffset] = FileLineTuple
-            if self.__IsToken( "|"):
-                RegionObj.PcdSize = self.__GetNextPcdName()
-                self.Profile.PcdDict[RegionObj.PcdSize] = "0x%08X" % RegionObj.Size
-                self.__PcdDict['%s.%s' % (RegionObj.PcdSize[1], RegionObj.PcdSize[0])] = "0x%x" % RegionObj.Size
+            IsRegionPcd = (RegionSizeGuidPattern.match(self.__CurrentLine()[self.CurrentOffsetWithinLine:]) or
+                           RegionOffsetPcdPattern.match(self.__CurrentLine()[self.CurrentOffsetWithinLine:]))
+            if IsRegionPcd:
+                RegionObj.PcdOffset = self.__GetNextPcdName()
+                self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(Fd.BaseAddress, 0))
+                self.__PcdDict['%s.%s' % (RegionObj.PcdOffset[1], RegionObj.PcdOffset[0])] = "0x%x" % RegionObj.Offset
                 FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
-                self.Profile.PcdFileLineDict[RegionObj.PcdSize] = FileLineTuple
+                self.Profile.PcdFileLineDict[RegionObj.PcdOffset] = FileLineTuple
+                if self.__IsToken( "|"):
+                    RegionObj.PcdSize = self.__GetNextPcdName()
+                    self.Profile.PcdDict[RegionObj.PcdSize] = "0x%08X" % RegionObj.Size
+                    self.__PcdDict['%s.%s' % (RegionObj.PcdSize[1], RegionObj.PcdSize[0])] = "0x%x" % RegionObj.Size
+                    FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+                    self.Profile.PcdFileLineDict[RegionObj.PcdSize] = FileLineTuple
 
             if not self.__GetNextWord():
                 return True
@@ -1806,6 +1815,9 @@ class FdfParser:
             self.__UndoToken()
             self.__GetRegionDataType( RegionObj)
         else:
+            self.__UndoToken()
+            if self.__GetRegionLayout(Fd):
+                return True
             raise Warning("A valid region type was not found. "
                           "Valid types are [SET, FV, CAPSULE, FILE, DATA]. This error occurred",
                           self.FileName, self.CurrentLineNumber)
