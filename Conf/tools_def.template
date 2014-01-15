@@ -192,11 +192,6 @@ DEFINE IPHONE_TOOLS            = /Developer/Platforms/iPhoneOS.platform/Develope
 
 DEFINE SOURCERY_CYGWIN_TOOLS = /cygdrive/c/Program Files/CodeSourcery/Sourcery G++ Lite/bin
 
-#
-# Change to the location clang was built
-#
-DEFINE CLANG_BIN = /usr/bin/
-
 ####################################################################################
 #
 # format: TARGET_TOOLCHAIN_ARCH_COMMANDTYPE_ATTRIBUTE = <string>
@@ -5484,15 +5479,15 @@ RELEASE_XCODE32_ARM_CC_FLAGS   = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mthumb-inter
 RELEASE_XCLANG_*_MTOC_FLAGS = -align 0x20
 
 
-*_XCLANG_*_CC_PATH      = DEF(CLANG_BIN)clang
+*_XCLANG_*_CC_PATH      = ENV(CLANG_BIN)clang
 *_XCLANG_*_SLINK_PATH   = libtool
 *_XCLANG_*_DLINK_PATH   = ld
 *_XCLANG_*_ASM_PATH     = as
-*_XCLANG_*_PP_PATH      = DEF(CLANG_BIN)clang
-*_XCLANG_*_VFRPP_PATH   = DEF(CLANG_BIN)clang
+*_XCLANG_*_PP_PATH      = ENV(CLANG_BIN)clang
+*_XCLANG_*_VFRPP_PATH   = ENV(CLANG_BIN)clang
 *_XCLANG_*_ASL_PATH     = iasl
-*_XCLANG_*_ASLCC_PATH   = DEF(CLANG_BIN)clang
-*_XCLANG_*_ASLPP_PATH   = DEF(CLANG_BIN)clang
+*_XCLANG_*_ASLCC_PATH   = ENV(CLANG_BIN)clang
+*_XCLANG_*_ASLPP_PATH   = ENV(CLANG_BIN)clang
 *_XCLANG_*_ASLDLINK_PATH  = ld
 
 ####################
