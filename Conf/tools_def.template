@@ -3136,7 +3136,7 @@ DEFINE GCC_ALL_CC_FLAGS            = -g -Os -fshort-wchar -fno-strict-aliasing -
 DEFINE GCC_IA32_CC_FLAGS           = DEF(GCC_ALL_CC_FLAGS) -m32 -malign-double -freorder-blocks -freorder-blocks-and-partition -O2 -mno-stack-arg-probe
 DEFINE GCC_X64_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mno-red-zone -Wno-address -mno-stack-arg-probe
 DEFINE GCC_IPF_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -minline-int-divide-min-latency
-DEFINE GCC_ARM_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mword-relocations -mlittle-endian -mabi=aapcs -mapcs -fno-short-enums -save-temps -fsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address
+DEFINE GCC_ARM_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mword-relocations -mlittle-endian -mabi=aapcs -mapcs -fno-short-enums -save-temps -fsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb
 DEFINE GCC_AARCH64_CC_FLAGS        = DEF(GCC_ALL_CC_FLAGS) -mcmodel=large -mlittle-endian -fno-short-enums -save-temps -fverbose-asm -fsigned-char  -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-builtin -Wno-address
 DEFINE GCC_DLINK_FLAGS_COMMON      = -nostdlib --pie
 DEFINE GCC_IA32_X64_DLINK_COMMON   = DEF(GCC_DLINK_FLAGS_COMMON) --gc-sections
@@ -3184,7 +3184,7 @@ DEFINE GCC46_IA32_X64_DLINK_FLAGS    = DEF(GCC45_IA32_X64_DLINK_FLAGS)
 DEFINE GCC46_X64_DLINK_FLAGS         = DEF(GCC45_X64_DLINK_FLAGS)
 DEFINE GCC46_ASM_FLAGS               = DEF(GCC45_ASM_FLAGS)
 DEFINE GCC46_ARM_ASM_FLAGS           = $(ARCHASM_FLAGS) $(PLATFORM_FLAGS) DEF(GCC_ASM_FLAGS) -mlittle-endian
-DEFINE GCC46_ARM_CC_FLAGS            = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) DEF(GCC44_ALL_CC_FLAGS) -mword-relocations -mlittle-endian -mabi=aapcs -mapcs -fno-short-enums -save-temps -fsigned-char -mno-unaligned-access -Wno-address -fomit-frame-pointer
+DEFINE GCC46_ARM_CC_FLAGS            = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) DEF(GCC44_ALL_CC_FLAGS) DEF(GCC_ARM_CC_FLAGS) -mno-unaligned-access
 DEFINE GCC46_ARM_DLINK_FLAGS         = DEF(GCC_ARM_AARCH64_DLINK_COMMON) --oformat=elf32-littlearm
 DEFINE GCC46_ARM_ASLDLINK_FLAGS      = DEF(GCC_ARM_AARCH64_ASLDLINK_FLAGS) --oformat=elf32-littlearm
 
@@ -3198,7 +3198,7 @@ DEFINE GCC47_ASM_FLAGS               = DEF(GCC46_ASM_FLAGS)
 DEFINE GCC47_ARM_ASM_FLAGS           = DEF(GCC46_ARM_ASM_FLAGS)
 DEFINE GCC47_AARCH64_ASM_FLAGS       = $(ARCHASM_FLAGS) $(PLATFORM_FLAGS) DEF(GCC_ASM_FLAGS) -mlittle-endian
 DEFINE GCC47_ARM_CC_FLAGS            = DEF(GCC46_ARM_CC_FLAGS)
-DEFINE GCC47_AARCH64_CC_FLAGS        = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) DEF(GCC44_ALL_CC_FLAGS) -mcmodel=large -mlittle-endian -fno-short-enums -save-temps -fverbose-asm -fsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-builtin -Wno-address
+DEFINE GCC47_AARCH64_CC_FLAGS        = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) DEF(GCC44_ALL_CC_FLAGS) DEF(GCC_AARCH64_CC_FLAGS)
 DEFINE GCC47_ARM_DLINK_FLAGS         = DEF(GCC46_ARM_DLINK_FLAGS)
 DEFINE GCC47_AARCH64_DLINK_FLAGS     = DEF(GCC_ARM_AARCH64_DLINK_COMMON)
 DEFINE GCC47_ARM_ASLDLINK_FLAGS      = DEF(GCC46_ARM_ASLDLINK_FLAGS)
@@ -3516,7 +3516,7 @@ DEFINE GCC48_AARCH64_ASLDLINK_FLAGS  = DEF(GCC_ARM_AARCH64_ASLDLINK_FLAGS)
 *_GCC46_ARM_ASLPP_PATH           = ENV(GCC46_ARM_PREFIX)gcc
 *_GCC46_ARM_RC_PATH              = ENV(GCC46_ARM_PREFIX)objcopy
 
-*_GCC46_ARM_ARCHCC_FLAGS         = -mthumb
+*_GCC46_ARM_ARCHCC_FLAGS         =
 *_GCC46_ARM_PLATFORM_FLAGS       = -march=armv7-a
 
 *_GCC46_ARM_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS)
@@ -3610,7 +3610,7 @@ RELEASE_GCC46_ARM_CC_FLAGS       = DEF(GCC46_ARM_CC_FLAGS) -Wno-unused-but-set-v
 *_GCC47_ARM_ASLPP_PATH           = ENV(GCC47_ARM_PREFIX)gcc
 *_GCC47_ARM_RC_PATH              = ENV(GCC47_ARM_PREFIX)objcopy
 
-*_GCC47_ARM_ARCHCC_FLAGS         = -mthumb
+*_GCC47_ARM_ARCHCC_FLAGS         =
 *_GCC47_ARM_PLATFORM_FLAGS       = -march=armv7-a
 
 *_GCC47_ARM_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS)
@@ -5707,7 +5707,7 @@ RELEASE_RVCTCYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_F
 #
 # Use default values, or override in DSC file
 #
-*_ARMGCC_ARM_ARCHCC_FLAGS    = -mthumb
+*_ARMGCC_ARM_ARCHCC_FLAGS    =
 *_ARMGCC_ARM_ARCHASM_FLAGS   =
 *_ARMGCC_ARM_ARCHDLINK_FLAGS =
 *_ARMGCC_ARM_PLATFORM_FLAGS  = -march=armv7-a
@@ -5801,7 +5801,7 @@ RELEASE_ARMGCC_AARCH64_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) DEF(GCC_AARC
 #
 # Use default values, or override in DSC file
 #
-*_ARMLINUXGCC_ARM_ARCHCC_FLAGS    = -mthumb
+*_ARMLINUXGCC_ARM_ARCHCC_FLAGS    =
 *_ARMLINUXGCC_ARM_ARCHASM_FLAGS   = 
 *_ARMLINUXGCC_ARM_ARCHDLINK_FLAGS =
 *_ARMLINUXGCC_ARM_PLATFORM_FLAGS  = -march=armv7-a
