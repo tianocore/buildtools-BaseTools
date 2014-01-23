@@ -3131,7 +3131,7 @@ DEFINE GCC_ALL_CC_FLAGS            = -g -Os -fshort-wchar -fno-strict-aliasing -
 DEFINE GCC_IA32_CC_FLAGS           = DEF(GCC_ALL_CC_FLAGS) -m32 -malign-double -freorder-blocks -freorder-blocks-and-partition -O2 -mno-stack-arg-probe
 DEFINE GCC_X64_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mno-red-zone -Wno-address -mno-stack-arg-probe
 DEFINE GCC_IPF_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -minline-int-divide-min-latency
-DEFINE GCC_ARM_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mword-relocations -mlittle-endian -mabi=aapcs -mapcs -fno-short-enums -save-temps -fsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb
+DEFINE GCC_ARM_CC_FLAGS            = DEF(GCC_ALL_CC_FLAGS) -mword-relocations -mlittle-endian -mabi=aapcs -mapcs -fno-short-enums -save-temps -fsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb -mfloat-abi=soft
 DEFINE GCC_AARCH64_CC_FLAGS        = DEF(GCC_ALL_CC_FLAGS) -mcmodel=large -mlittle-endian -fno-short-enums -save-temps -fverbose-asm -fsigned-char  -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-builtin -Wno-address
 DEFINE GCC_DLINK_FLAGS_COMMON      = -nostdlib --pie
 DEFINE GCC_IA32_X64_DLINK_COMMON   = DEF(GCC_DLINK_FLAGS_COMMON) --gc-sections
@@ -5545,7 +5545,7 @@ DEFINE RVCT_ALL_DLINK_FLAGS   = --ro-base 0 --no_scanlib --reloc --no_exceptions
 #
 # Use default values, or override in DSC file
 #
-*_RVCT_ARM_ARCHCC_FLAGS    = --thumb
+*_RVCT_ARM_ARCHCC_FLAGS    = --thumb --fpu=softvfp
 *_RVCT_ARM_ARCHASM_FLAGS   = 
 *_RVCT_ARM_ARCHDLINK_FLAGS = 
 *_RVCT_ARM_PLATFORM_FLAGS  = --cpu 7-A
@@ -5587,7 +5587,7 @@ RELEASE_RVCT_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --diag_suppress=5
 #
 # Use default values, or override in DSC file
 #
-*_RVCTLINUX_ARM_ARCHCC_FLAGS    = --thumb
+*_RVCTLINUX_ARM_ARCHCC_FLAGS    = --thumb --fpu=softvfp
 *_RVCTLINUX_ARM_ARCHASM_FLAGS   = 
 *_RVCTLINUX_ARM_ARCHDLINK_FLAGS = 
 *_RVCTLINUX_ARM_PLATFORM_FLAGS  = --cpu 7-A
@@ -5634,7 +5634,7 @@ RELEASE_RVCTLINUX_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --diag_suppr
 #
 # Use default values, or override in DSC file
 #
-*_RVCTCYGWIN_ARM_ARCHCC_FLAGS    = --thumb
+*_RVCTCYGWIN_ARM_ARCHCC_FLAGS    = --thumb --fpu=softvfp
 *_RVCTCYGWIN_ARM_ARCHASM_FLAGS   =
 *_RVCTCYGWIN_ARM_ARCHDLINK_FLAGS = 
 *_RVCTCYGWIN_ARM_PLATFORM_FLAGS  = --cpu 7-A
