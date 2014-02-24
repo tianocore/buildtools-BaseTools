@@ -22,32 +22,32 @@ pushd .
 @REM # You should not have to modify anything below this line
 @REM #
 
-@if /I "%1"=="-h" goto Usage
-@if /I "%1"=="-help" goto Usage
-@if /I "%1"=="--help" goto Usage
-@if /I "%1"=="/h" goto Usage
-@if /I "%1"=="/help" goto Usage
-@if /I "%1"=="/?" goto Usage
+if /I "%1"=="-h" goto Usage
+if /I "%1"=="-help" goto Usage
+if /I "%1"=="--help" goto Usage
+if /I "%1"=="/h" goto Usage
+if /I "%1"=="/help" goto Usage
+if /I "%1"=="/?" goto Usage
 
 
 :loop
-  @if "%1"=="" goto setup_workspace
-  @if /I "%1"=="--nt32" (
+  if "%1"=="" goto setup_workspace
+  if /I "%1"=="--nt32" (
     @REM Ignore --nt32 flag
     shift
     goto loop
   )
-  @if /I "%1"=="Reconfig" (
+  if /I "%1"=="Reconfig" (
     shift
     set RECONFIG=TRUE
     goto loop
   )
-  @if /I "%1"=="Rebuild" (
+  if /I "%1"=="Rebuild" (
     shift
     set REBUILD=TRUE
     goto loop
   )
-  @if /I "%1"=="ForceRebuild" (
+  if /I "%1"=="ForceRebuild" (
     shift
     set FORCE_REBUILD=TRUE
     goto loop
@@ -352,23 +352,21 @@ goto end
   goto end
 
 :Usage
-  echo.
+  @echo.
   echo  Usage: "%0 [-h | -help | --help | /h | /help | /?] [ Rebuild | ForceRebuild ] [Reconfig] [base_tools_path [edk_tools_path]]"
-  echo.
-  echo         base_tools_path   BaseTools project path, BASE_TOOLS_PATH will be set to this path. 
-  echo         edk_tools_path    EDK_TOOLS_PATH will be set to this path.
-  echo         Rebuild           If sources are available perform an Incremental build, only 
-  echo                           build those updated tools.
-  echo         ForceRebuild      If sources are available, rebuild all tools regardless of 
-  echo                           whether they have been updated or not.
-  echo         Reconfig          Reinstall target.txt, tools_def.txt and build_rule.txt.
-echo.
+  @echo.
+  @echo         base_tools_path   BaseTools project path, BASE_TOOLS_PATH will be set to this path. 
+  @echo         edk_tools_path    EDK_TOOLS_PATH will be set to this path.
+  @echo         Rebuild           If sources are available perform an Incremental build, only 
+  @echo                           build those updated tools.
+  @echo         ForceRebuild      If sources are available, rebuild all tools regardless of 
+  @echo                           whether they have been updated or not.
+  @echo         Reconfig          Reinstall target.txt, tools_def.txt and build_rule.txt.
+  @echo.
 
 :end
 set REBUILD=
 set FORCE_REBUILD=
 set RECONFIG=
 popd
-
-@echo on
 
