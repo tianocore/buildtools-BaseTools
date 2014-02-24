@@ -292,31 +292,16 @@ goto end
   echo PYTHON_FREEZER_PATH = %PYTHON_FREEZER_PATH%
   echo.
 
-  if defined VCINSTALLDIR goto VisualStudioAvailable
-  if defined VS100COMNTOOLS (
-    call "%VS100COMNTOOLS%\vsvars32.bat"
-  ) else (
-    if defined VS90COMNTOOLS (
-      call "%VS90COMNTOOLS%\vsvars32.bat"
-    ) else (
-      if defined VS80COMNTOOLS (
-        call "%VS80COMNTOOLS%\vsvars32.bat"
-      ) else (
-        if defined VS71COMNTOOLS (
-          call "%VS71COMNTOOLS%\vsvars32.bat"
-        ) else (
-          echo.
-          echo !!! ERROR !!!! Cannot find Visual Studio, required to build C tools !!!
-          echo.
-          goto end
-        )
-      )
-    )
+  call "%EDK_TOOLS_PATH%\get_vsvars.bat"
+  if not defined VCINSTALLDIR (
+    @echo.
+    @echo !!! ERROR !!!! Cannot find Visual Studio, required to build C tools !!!
+    @echo.
+    goto end
   )
 
 :VisualStudioAvailable
-  if defined FORCE_REBUILD goto CleanAndBuild
-  goto IncrementalBuild
+  if not defined FORCE_REBUILD goto IncrementalBuild
 
 :CleanAndBuild
   pushd .
