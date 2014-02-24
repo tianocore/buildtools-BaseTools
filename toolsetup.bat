@@ -246,7 +246,8 @@ goto end
   )
   set PATH=%BASE_TOOLS_PATH%\Bin\Win32;%PATH%
 
-  set PYTHONPATH=%BASE_TOOLS_PATH%\Source\Python
+  set BASETOOLS_PYTHON_SOURCE=%BASE_TOOLS_PATH%\Source\Python
+  set PYTHONPATH=%BASETOOLS_PYTHON_SOURCE%;%PYTHONPATH%
 
   if not defined PYTHON_HOME (
     if defined PYTHONHOME (
@@ -279,8 +280,9 @@ goto end
       echo !!! WARNING !!! Will not be able to compile Python programs to .exe
       echo Will setup environment to run Python scripts directly.
       echo.
-      set PYTHONPATH=%BASE_TOOLS_PATH%\Source\Python
-      set PATH=%PYTHONPATH%\build;%PYTHONPATH%\GenFds;%PYTHONPATH%\Trim;%PATH%
+      set PATH=%BASETOOLS_PYTHON_SOURCE%\Trim;%PATH%
+      set PATH=%BASETOOLS_PYTHON_SOURCE%\GenFds;%PATH%
+      set PATH=%BASETOOLS_PYTHON_SOURCE%\build;%PATH%
       set PATHEXT=%PATHEXT%;.py
     )
   )
