@@ -2875,6 +2875,7 @@ NOOPT_VS2012x86xASL_X64_DLINK_FLAGS    = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT
 #   ASL  - Intel ACPI Source Language Compiler (iasl.exe)
 *_DDK3790_*_*_FAMILY        = MSFT
 
+*_DDK3790_*_*_DLL           = DEF(WINDDK_BIN32)
 *_DDK3790_*_MAKE_PATH       = DEF(WINDDK_BIN32)\nmake.exe
 *_DDK3790_*_MAKE_FLAGS           = /nologo
 *_DDK3790_*_RC_PATH         = DEF(WINDDK_BIN32)\rc.exe
@@ -3000,6 +3001,7 @@ NOOPT_DDK3790_IPF_DLINK_FLAGS    = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,ICF
 #   ASL          - Microsoft ACPI Source Language Compiler (asl.exe)
 *_DDK3790xASL_*_*_FAMILY        = MSFT
 
+*_DDK3790xASL_*_*_DLL           = DEF(WINDDK_BIN32)
 *_DDK3790xASL_*_MAKE_PATH       = DEF(WINDDK_BIN32)\nmake.exe
 *_DDK3790xASL_*_MAKE_FLAGS           = /nologo
 *_DDK3790xASL_*_RC_PATH         = DEF(WINDDK_BIN32)\rc.exe
