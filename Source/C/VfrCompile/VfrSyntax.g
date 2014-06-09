@@ -4344,11 +4344,13 @@ EfiVfrParser::_STOU8 (
   UINT8   Value;
   CHAR8   c;
 
+  UINT8 PreviousValue;
+  CHAR8 *OrigString = Str;
+  CHAR8 ErrorMsg[100];
+
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
-    //
-    // BUG: does not handle overflow here
-    //
+    PreviousValue = Value;
     (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
@@ -4359,6 +4361,10 @@ EfiVfrParser::_STOU8 (
     }
     if (c >= '0' && c <= '9') {
       Value += (c - '0');
+    }
+    if((IsHex && ((Value/16) != PreviousValue)) || (!IsHex && ((Value/10) != PreviousValue))) {
+      sprintf(ErrorMsg, "Overflow: Value %s is too large to store in a UINT8", OrigString);
+      _PCATCH (VFR_RETURN_INVALID_PARAMETER, 0, ErrorMsg);
     }
   }
 
@@ -4374,11 +4380,13 @@ EfiVfrParser::_STOU16 (
   UINT16  Value;
   CHAR8   c;
 
+  UINT16 PreviousValue;
+  CHAR8 *OrigString = Str;
+  CHAR8 ErrorMsg[100];
+
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
-    //
-    // BUG: does not handle overflow here
-    //
+    PreviousValue = Value;
     (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
@@ -4389,6 +4397,10 @@ EfiVfrParser::_STOU16 (
     }
     if (c >= '0' && c <= '9') {
       Value += (c - '0');
+    }
+    if((IsHex && ((Value/16) != PreviousValue)) || (!IsHex && ((Value/10) != PreviousValue))) {
+      sprintf(ErrorMsg, "Overflow: Value %s is too large to store in a UINT16", OrigString);
+      _PCATCH (VFR_RETURN_INVALID_PARAMETER, 0, ErrorMsg);
     }
   }
 
@@ -4404,11 +4416,13 @@ EfiVfrParser::_STOU32 (
   UINT32  Value;
   CHAR8   c;
 
+  UINT32 PreviousValue;
+  CHAR8 *OrigString = Str;
+  CHAR8 ErrorMsg[100];
+
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
-    //
-    // BUG: does not handle overflow here
-    //
+    PreviousValue = Value;
     (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
@@ -4419,6 +4433,10 @@ EfiVfrParser::_STOU32 (
     }
     if (c >= '0' && c <= '9') {
       Value += (c - '0');
+    }
+    if((IsHex && ((Value/16) != PreviousValue)) || (!IsHex && ((Value/10) != PreviousValue ))) {
+      sprintf(ErrorMsg, "Overflow: Value %s is too large to store in a UINT32", OrigString);
+      _PCATCH (VFR_RETURN_INVALID_PARAMETER, 0, ErrorMsg);
     }
   }
 
@@ -4433,12 +4451,13 @@ EfiVfrParser::_STOU64 (
   BOOLEAN IsHex;
   UINT64  Value;
   CHAR8   c;
+  UINT64 PreviousValue;
+  CHAR8 *OrigString = Str;
+  CHAR8 ErrorMsg[100];
 
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
-    //
-    // BUG: does not handle overflow here
-    //
+    PreviousValue = Value;
     (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
@@ -4449,6 +4468,10 @@ EfiVfrParser::_STOU64 (
     }
     if (c >= '0' && c <= '9') {
       Value += (c - '0');
+    }
+    if((IsHex && ((Value/16) != PreviousValue)) || ((!IsHex && (Value/10) != PreviousValue))) {
+      sprintf(ErrorMsg, "Overflow: Value %s is too large to store in a UINT64", OrigString);
+      _PCATCH (VFR_RETURN_INVALID_PARAMETER, 0, ErrorMsg);
     }
   }
 
