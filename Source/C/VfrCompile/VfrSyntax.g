@@ -1,5 +1,5 @@
 /*++
-Copyright (c) 2004 - 2013, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2014, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -2277,8 +2277,9 @@ vfrNumericFlags [CIfrNumeric & NObj, UINT32 LineNum] :
      UINT8 HFlags = 0;
      EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
      BOOLEAN IsSetType = FALSE;
+     BOOLEAN IsDisplaySpecified = FALSE;
   >>
-  numericFlagsField[HFlags, LFlags, IsSetType] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType] )*
+  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified ] )*
                                                        <<
                                                           //check data type flag
                                                           if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
@@ -2297,19 +2298,19 @@ vfrNumericFlags [CIfrNumeric & NObj, UINT32 LineNum] :
                                                           } else if (IsSetType){
                                                             _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
                                                           }
-                                                          _PCATCH(NObj.SetFlags (HFlags, LFlags), LineNum);
+                                                          _PCATCH(NObj.SetFlags (HFlags, LFlags, IsDisplaySpecified), LineNum);
                                                        >>
   ;
 
-numericFlagsField [UINT8 & HFlags, UINT8 & LFlags, BOOLEAN & IsSetType] :
+numericFlagsField [UINT8 & HFlags, UINT8 & LFlags, BOOLEAN & IsSetType, BOOLEAN & IsDisplaySpecified] :
     N:Number                                           << _PCATCH(_STOU8(N->getText()) == 0 ? VFR_RETURN_SUCCESS : VFR_RETURN_UNSUPPORTED, N->getLine()); >>
   | "NUMERIC_SIZE_1"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_1; IsSetType = TRUE;>>
   | "NUMERIC_SIZE_2"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_2; IsSetType = TRUE;>>
   | "NUMERIC_SIZE_4"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_4; IsSetType = TRUE;>>
   | "NUMERIC_SIZE_8"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_8; IsSetType = TRUE;>>
-  | "DISPLAY_INT_DEC"                                  << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_INT_DEC; >>
-  | "DISPLAY_UINT_DEC"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_DEC; >>
-  | "DISPLAY_UINT_HEX"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_HEX; >>
+  | "DISPLAY_INT_DEC"                                  << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_INT_DEC; IsDisplaySpecified = TRUE;>>
+  | "DISPLAY_UINT_DEC"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_DEC; IsDisplaySpecified = TRUE;>>
+  | "DISPLAY_UINT_HEX"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_HEX; IsDisplaySpecified = TRUE;>>
   | questionheaderFlagsField[HFlags]
   ;
 
@@ -2366,8 +2367,9 @@ vfrOneofFlagsField [CIfrOneOf & OObj, UINT32 LineNum] :
      UINT8 HFlags = 0;
      EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
      BOOLEAN IsSetType = FALSE;
+     BOOLEAN IsDisplaySpecified = FALSE;
   >>
-  numericFlagsField[HFlags, LFlags, IsSetType] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType] )*
+  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] )*
                                                        <<
                                                           //check data type flag
                                                           if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
